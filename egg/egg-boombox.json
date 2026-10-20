@@ -4,7 +4,7 @@
         "version": "PTDL_v2",
         "update_url": null
     },
-    "exported_at": "2026-10-20T19:55:12+00:00",
+    "exported_at": "2026-10-20T20:35:49+00:00",
     "name": "Boombox",
     "author": "matteomitzweit@proton.me",
     "description": "Party games for a single phone (Impostor, Spy, Werewolf, Who would rather, Bomb) with optional accounts and several languages. Installs the latest release from GitHub.",
@@ -37,7 +37,7 @@
             "default_value": "Mit-Zwei-T-Apps/Boombox",
             "user_viewable": true,
             "user_editable": true,
-            "rules": "required|string|regex:/^[A-Za-z0-9._-]+\\/[A-Za-z0-9._-]+$/|max:100",
+            "rules": "required|string|max:100|regex:/^[A-Za-z0-9._-]+\\/[A-Za-z0-9._-]+$/",
             "field_type": "text"
         },
         {
@@ -47,7 +47,7 @@
             "default_value": "latest",
             "user_viewable": true,
             "user_editable": true,
-            "rules": "required|string|regex:/^(latest|[A-Za-z0-9._-]+)$/|max:50",
+            "rules": "required|string|max:50|regex:/^[A-Za-z0-9._-]+$/",
             "field_type": "text"
         },
         {

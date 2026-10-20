@@ -122,9 +122,9 @@ def build(repo, author):
         },
         "variables": [
             var("GitHub repository", "Where the release archive is downloaded from, as OWNER/REPO.",
-                "GITHUB_REPO", repo, "required|string|regex:/^[A-Za-z0-9._-]+\\/[A-Za-z0-9._-]+$/|max:100"),
+                "GITHUB_REPO", repo, "required|string|max:100|regex:/^[A-Za-z0-9._-]+\\/[A-Za-z0-9._-]+$/"),
             var("Release tag", "Version to install, for example v1.0.0, or latest. Change it and use Reinstall to update. The data folder is kept.",
-                "RELEASE_TAG", "latest", "required|string|regex:/^(latest|[A-Za-z0-9._-]+)$/|max:50"),
+                "RELEASE_TAG", "latest", "required|string|max:50|regex:/^[A-Za-z0-9._-]+$/"),
             var("Allow registration", "Let visitors create accounts. Guests can always play without one.",
                 "ALLOW_REGISTER", "true", "required|string|in:true,false"),
             var("Admin username", "Name of the admin account created on first start.",
