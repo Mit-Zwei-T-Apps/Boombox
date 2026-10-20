@@ -1,0 +1,46 @@
+name: Release
+
+# Push a tag like v1.0.0 to build boombox.tar.gz, its checksum and the egg, and publish them as a GitHub Release.
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Tag must match package.json
+        run: |
+          V="$(node -p "require('./package.json').version")"
+          if [ "v$V" != "$GITHUB_REF_NAME" ]; then
+            echo "Tag $GITHUB_REF_NAME does not match package.json version v$V"
+            exit 1
+          fi
+
+      - name: Smoke test
+        run: npm test
+
+      - name: Build archive and checksum
+        run: |
+          tar -czf boombox.tar.gz --owner=0 --group=0 server.js package.json README.md lib public
+          sha256sum boombox.tar.gz > boombox.tar.gz.sha256
+
+      - name: Generate the egg for this repository
+        run: python3 scripts/make_egg.py "$GITHUB_REPOSITORY" --output egg-boombox.json
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" boombox.tar.gz boombox.tar.gz.sha256 egg-boombox.json \
+            --title "$GITHUB_REF_NAME" --generate-notes

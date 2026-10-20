@@ -1,0 +1,12 @@
+{
+  "name": "boombox",
+  "version": "1.0.0",
+  "description": "Party games for a single phone (Impostor, Spy, Werewolf, Who would rather, Bomb). Self-hostable, optional accounts, multilingual.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node scripts/smoke-test.js && node scripts/room-test.js"
+  },
+  "engines": { "node": ">=18" },
+  "private": true
+}
