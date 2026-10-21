@@ -1,7 +1,7 @@
 'use strict';
 // Network first, cache as fallback, so the one-phone games also open without a connection. The API is never cached.
 const CACHE = 'boombox-shell-v1';
-const SHELL = ['./', 'index.html', 'app.css', 'app.js', 'online.js', 'boxes.js', 'wolflocal.js', 'manifest.webmanifest', 'icon-192.png', 'locales/index.json', 'locales/en.json'];
+const SHELL = ['./', 'index.html', 'app.css', 'app.js', 'online.js', 'boxes.js', 'wolflocal.js', 'duel.js', 'manifest.webmanifest', 'icon-192.png', 'locales/index.json', 'locales/en.json'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()).catch(() => self.skipWaiting()));

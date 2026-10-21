@@ -171,7 +171,7 @@ function scoreList(scores, ids) {
 function progress(n, m) { return '<p class="hint">' + T('on.voted', { n: n, m: m }) + '</p>'; }
 function roleCard(v) {
   if (v.role === 'imp') {
-    return '<div class="role r-' + (v.type === 'spy' ? 'lemon' : 'coral') + '"><p class="kicker">' + T('imp.youAre') + '</p><h2>' + T(v.type === 'spy' ? 'spy.role' : 'imp.role') + '</h2><p>' + T(v.type === 'spy' ? 'spy.roleText' : 'imp.roleText') + (v.cat ? T('imp.topicIs', { cat: v.cat }) : '') + '</p></div>';
+    return '<div class="role r-' + (v.type === 'spy' ? 'lemon' : 'coral') + '"><p class="kicker">' + T('imp.youAre') + '</p><h2>' + T(v.type === 'spy' ? 'spy.role' : 'imp.role') + '</h2><p>' + T(v.type === 'spy' ? 'spy.roleText' : 'imp.roleText') + (v.cat ? T('imp.topicIs', { cat: v.cat }) : '') + '</p>' + (v.letter ? '<p class="hint">' + T('imp.tip', { l: esc(v.letter) }) + '</p>' : '') + '</div>';
   }
   return '<div class="role r-aqua"><p class="kicker">' + T(v.type === 'spy' ? 'spy.placeIs' : 'imp.wordIs') + '</p><h2>' + esc(v.secret) + '</h2><p>' + T(v.type === 'spy' ? 'spy.placeText' : 'imp.wordText') + '</p></div>';
 }
@@ -237,7 +237,7 @@ A.oclear = function () { clearCanvas(); post('clear'); };
 A.ogame = function (id) { O.pick = id; TP.render(); };
 A.ostart = function () {
   var id = O.pick || 'impostor', opts = {};
-  if (id === 'impostor') opts = { cat: S.cfg.imp.cat === 'all' ? null : S.cfg.imp.cat, n: S.cfg.imp.n };
+  if (id === 'impostor') opts = { cat: S.cfg.imp.cat === 'all' ? null : S.cfg.imp.cat, n: S.cfg.imp.n, tip: S.cfg.imp.tip !== false };
   if (id === 'spy') opts = { minutes: S.cfg.spy.min };
   if (id === 'wolf') { var k = TP.wolfCounts(); opts = { on: S.cfg.wolf.on, wolves: k.w }; }
   if (id === 'sketch') opts = { rounds: S.cfg.sketch.rounds };
@@ -269,7 +269,7 @@ function lobby() {
     var words = TP.D('words'), c = S.cfg.imp, maxI = Math.max(1, Math.floor((n - 1) / 2));
     if (c.n > maxI) c.n = maxI;
     var cats = ['all'].concat(Object.keys(words)).map(function (k) { return '<button class="chip' + (c.cat === k ? ' on' : '') + '" data-act="impcat" data-a="' + k + '">' + (k === 'all' ? T('imp.all') : esc(words[k].label)) + '</button>'; }).join('');
-    settings = '<div class="panel"><div class="label">' + T('imp.topic') + '</div><div class="chips">' + cats + '</div></div>' + TP.stepper(t('imp.count'), c.n, 'imp', t('imp.hint', { n: n, max: maxI }));
+    settings = '<div class="panel"><div class="label">' + T('imp.topic') + '</div><div class="chips">' + cats + '</div></div>' + TP.stepper(t('imp.count'), c.n, 'imp', t('imp.hint', { n: n, max: maxI })) + '<div class="panel">' + TP.toggle(t('imp.tipOpt'), t('imp.tipOpt.d'), c.tip !== false, 'imptip') + '</div>';
   } else if (pick === 'spy') {
     settings = TP.stepper(t('spy.len'), S.cfg.spy.min, 'spy', '');
   } else if (pick === 'wolf') {

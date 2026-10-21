@@ -11,7 +11,9 @@ var GAMES = {
   never: { min: 2, max: 20, cls: 'c-never', stat: 'never' },
   truth: { min: 2, max: 20, cls: 'c-truth', stat: 'truth' },
   whoami: { min: 2, max: 20, cls: 'c-whoami', stat: 'whoami' },
-  boxes: { min: 2, max: 4, cls: 'c-boxes', stat: 'boxes' }
+  boxes: { min: 2, max: 4, cls: 'c-boxes', stat: 'boxes' },
+  duel: { min: 2, max: 2, cls: 'c-duel', stat: 'duel' },
+  quad: { min: 2, max: 4, cls: 'c-quad', stat: 'duel' }
 };
 var SPECIALS = ['seer', 'witch', 'hunter', 'cupid', 'guardian', 'girl', 'idiot', 'elder'];
 var ROLE_CLS = {
@@ -30,7 +32,7 @@ var me = null;       // signed-in user or null
 var soundOn = true, audio = null, timers = [];
 var S = {
   screen: 'home', players: loadPlayers(), g: {}, pass: null, b: null, q: null, msg: null, after: null,
-  on: {}, cfg: { sketch: { rounds: 2 }, boxes: { n: 5 }, imp: { cat: 'all', n: 1 }, spy: { min: 8 }, wolf: { on: { seer: true }, wolves: 0, narrator: false } }
+  on: {}, cfg: { sketch: { rounds: 2 }, boxes: { n: 5 }, imp: { cat: 'all', n: 1, tip: true }, spy: { min: 8 }, wolf: { on: { seer: true }, wolves: 0, narrator: false } }
 };
 
 /* ---------- helpers ---------- */
@@ -52,8 +54,18 @@ function D(name) {
   if (name === 'words') { var o = Object.assign({}, base); o.custom = { label: t('custom'), list: c }; return o; }
   return base.concat(c);
 }
-function shuffle(a) { a = a.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var x = a[i]; a[i] = a[j]; a[j] = x; } return a; }
-function pick(a) { return a[Math.floor(Math.random() * a.length)]; }
+function rnd() { try { var u = new Uint32Array(1); crypto.getRandomValues(u); return u[0] / 4294967296; } catch (e) { return Math.random(); } }
+function shuffle(a) { a = a.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(rnd() * (i + 1)); var x = a[i]; a[i] = a[j]; a[j] = x; } return a; }
+function pick(a) { return a[Math.floor(rnd() * a.length)]; }
+/* like pick, but remembers the last picks in this browser so words and places don't repeat soon */
+function pickFresh(list, key) {
+  var seen = []; try { seen = JSON.parse(localStorage.getItem('boombox.seen.' + key) || '[]'); } catch (e) { seen = []; }
+  var fresh = list.filter(function (x) { return seen.indexOf(x) === -1; });
+  if (!fresh.length) { fresh = list; seen = []; }
+  var x = pick(fresh); seen.push(x); if (seen.length > Math.min(60, list.length - 1)) seen.shift();
+  try { localStorage.setItem('boombox.seen.' + key, JSON.stringify(seen)); } catch (e) { /* ignore */ }
+  return x;
+}
 function stopAll() { timers.forEach(function (x) { clearTimeout(x); clearInterval(x); }); timers = []; }
 function later(fn, ms) { var x = setTimeout(fn, ms); timers.push(x); return x; }
 function every(fn, ms) { var x = setInterval(fn, ms); timers.push(x); return x; }
@@ -188,7 +200,7 @@ V.home = function () {
   var acc = server ? '<button class="' + (me ? 'me' : '') + '" data-act="go" data-a="' + (me && me.mustChange ? 'changepw' : 'account') + '">' + (me ? esc(me.name) : T('signIn')) + '</button>' : '';
   var cards = Object.keys(GAMES).map(function (id) {
     var g = GAMES[id];
-    return '<button class="card ' + g.cls + '" data-act="game" data-a="' + id + '"><h3>' + T('g.' + id) + '</h3><p>' + T('g.' + id + '.d') + '</p><span class="meta">' + T('range', { min: g.min, max: g.max }) + '</span></button>';
+    return '<button class="card ' + g.cls + '" data-act="game" data-a="' + id + '"><h3>' + T('g.' + id) + '</h3><p>' + T('g.' + id + '.d') + '</p><span class="meta">' + (g.min === g.max ? T('duel.meta') : T('range', { min: g.min, max: g.max })) + '</span></button>';
   }).join('');
   return '<header><h1 class="wordmark">Boombox</h1><p class="kicker">' + T('appSub') + '</p><p class="sub">' + T('tagline') + '</p></header>' +
     '<div class="tools"><select id="lang" aria-label="' + T('language') + '">' + langs + '</select>' + acc + '</div>' +
@@ -248,6 +260,7 @@ V.impSetup = function () {
   return top(t('g.impostor')) +
     '<div class="panel"><div class="label">' + T('imp.topic') + '</div><div class="chips">' + cats + '</div></div>' +
     stepper(t('imp.count'), c.n, 'imp', t('imp.hint', { n: n, max: maxI })) +
+    '<div class="panel">' + toggle(t('imp.tipOpt'), t('imp.tipOpt.d'), c.tip, 'imptip') + '</div>' +
     '<button class="btn coral" data-act="impStart">' + T('imp.deal') + '</button>';
 };
 function impVote(g) {
@@ -617,9 +630,11 @@ A.game = function (id) {
   if (id === 'impostor') go('impSetup');
   else if (id === 'spy') go('spySetup');
   else if (id === 'wolf') go('wolfSetup');
+  else if (id === 'duel') go('duel', {});
+  else if (id === 'quad') go('quad', {});
   else if (id === 'wouldrather') { S.q = { order: shuffle(D('questions')), i: 0, pairs: shuffle(D('rather')), pi: 0 }; recordGame('wouldrather'); go('wouldrather'); }
   else if (id === 'never') { S.q = { order: shuffle(D('never')), i: 0 }; recordGame('never'); go('never'); }
-  else if (id === 'truth') { S.tod = { who: Math.floor(Math.random() * n), card: null, used: [] }; recordGame('truth'); go('truth'); }
+  else if (id === 'truth') { S.tod = { who: Math.floor(rnd() * n), card: null, used: [] }; recordGame('truth'); go('truth'); }
   else if (id === 'whoami') { S.wh = { i: 0, scores: {}, order: shuffle(allWords()), w: 0, running: false, got: 0, skipped: [], turn: null }; recordGame('whoami'); go('whoami'); }
   else if (id === 'boxes') { go('boxesSetup'); }
   else if (id === 'bomb') { S.b = { scores: {}, holder: 0, armed: false, used: [], prompt: '' }; newBomb(); recordGame('bomb'); go('bomb'); }
@@ -636,7 +651,8 @@ A.step = function (k, d) {
 };
 A.tog = function (k) {
   var c = S.cfg.wolf;
-  if (k === 'narrator') c.narrator = !c.narrator;
+  if (k === 'imptip') S.cfg.imp.tip = !S.cfg.imp.tip;
+  else if (k === 'narrator') c.narrator = !c.narrator;
   else if (k.indexOf('role:') === 0) { var r = k.slice(5); c.on[r] = !c.on[r]; }
   render();
 };
@@ -656,13 +672,14 @@ A.snd = function () { soundOn = !soundOn; render(); };
 A.impStart = function () {
   var c = S.cfg.imp, words = D('words'), keys = Object.keys(words);
   var pool = c.cat === 'all' || !words[c.cat] ? [].concat.apply([], keys.map(function (k) { return words[k].list; })) : words[c.cat].list;
-  var word = pick(pool), idx = shuffle(S.players.map(function (_, i) { return i; })).slice(0, c.n);
+  var word = pickFresh(pool, 'imp'), idx = shuffle(S.players.map(function (_, i) { return i; })).slice(0, c.n);
   var imps = idx.map(function (i) { return S.players[i]; });
-  var catLabel = c.cat !== 'all' && words[c.cat] ? words[c.cat].label : null;
+  var rk = keys.filter(function (k) { return words[k].list.indexOf(word) !== -1; })[0];
+  var catLabel = c.tip ? (rk ? words[rk].label : null) : (c.cat !== 'all' && words[c.cat] ? words[c.cat].label : null), letter = String(word).charAt(0).toUpperCase();
   var items = S.players.map(function (name, i) {
     var isImp = idx.indexOf(i) > -1;
     var html = isImp ?
-      '<div class="role r-coral"><p class="kicker">' + T('imp.youAre') + '</p><h2>' + T('imp.role') + '</h2><p>' + T('imp.roleText') + (catLabel ? T('imp.topicIs', { cat: catLabel }) : '') + '</p></div>' :
+      '<div class="role r-coral"><p class="kicker">' + T('imp.youAre') + '</p><h2>' + T('imp.role') + '</h2><p>' + T('imp.roleText') + (catLabel ? T('imp.topicIs', { cat: catLabel }) : '') + '</p>' + (c.tip ? '<p class="hint">' + T('imp.tip', { l: esc(letter) }) + '</p>' : '') + '</div>' :
       '<div class="role r-aqua"><p class="kicker">' + T('imp.wordIs') + '</p><h2>' + esc(word) + '</h2><p>' + T('imp.wordText') + '</p></div>';
     return { name: name, html: html };
   });
@@ -672,7 +689,7 @@ A.impStart = function () {
 
 /* Spy */
 A.spyStart = function () {
-  var place = pick(D('places')), spyI = Math.floor(Math.random() * S.players.length);
+  var place = pickFresh(D('places'), 'spy'), spyI = Math.floor(rnd() * S.players.length);
   var items = S.players.map(function (name, i) {
     var html = i === spyI ?
       '<div class="role r-lemon"><p class="kicker">' + T('imp.youAre') + '</p><h2>' + T('spy.role') + '</h2><p>' + T('spy.roleText') + '</p></div>' :
@@ -746,12 +763,12 @@ function newBomb() {
   var left = prompts.filter(function (p) { return B.used.indexOf(p) < 0; });
   if (!left.length) { B.used = []; left = prompts; }
   B.prompt = pick(left); B.used.push(B.prompt);
-  B.holder = Math.floor(Math.random() * S.players.length); B.armed = false;
+  B.holder = Math.floor(rnd() * S.players.length); B.armed = false;
 }
 A.arm = function () {
   var B = S.b; B.armed = true; beep(660, 0.08, 0.05);
   if (bMotion) motionStart();
-  var total = (6 + Math.random() * 54) * 1000, start = Date.now();
+  var total = (6 + rnd() * 54) * 1000, start = Date.now();
   render();
   function tick() {
     var el = Date.now() - start;
@@ -853,10 +870,11 @@ function init() {
       return loadLang(detectLang());
     })
     .then(function () {
+      var TPo = { S: S, V: V, A: A, F: F, t: t, T: T, esc: esc, has: function (k) { return L[k] !== undefined || EN[k] !== undefined; }, api: api, toast: toast, go: go, render: render,
+        beep: beep, fmt: fmt, bombSvg: bombSvg, top: top, msgBox: msgBox, setMsg: setMsg, lang: function () { return lang; }, me: function () { return me; }, D: D,
+        stepper: stepper, toggle: toggle, SPECIALS: SPECIALS, wolfCounts: wolfCounts, serverOnline: function () { return true; }, speak: speak, voiceBtn: voiceBtn, canSpeak: canSpeak };
+      if (window.TPDuel) window.TPDuel(TPo);
       if (server && server.online && window.TPOnline) {
-        var TPo = { S: S, V: V, A: A, F: F, t: t, T: T, esc: esc, has: function (k) { return L[k] !== undefined || EN[k] !== undefined; }, api: api, toast: toast, go: go, render: render,
-          beep: beep, fmt: fmt, bombSvg: bombSvg, top: top, msgBox: msgBox, setMsg: setMsg, lang: function () { return lang; }, me: function () { return me; }, D: D,
-          stepper: stepper, toggle: toggle, SPECIALS: SPECIALS, wolfCounts: wolfCounts, serverOnline: function () { return true; }, speak: speak, voiceBtn: voiceBtn, canSpeak: canSpeak };
         window.TPOnline(TPo);
         if (TPo.afterInit) TPo.afterInit();
       }

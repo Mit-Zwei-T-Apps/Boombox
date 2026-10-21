@@ -6,12 +6,14 @@ Pass the phone around, look at your card, cover it, hand it on. Everything runs 
 
 **Games**
 
-- **Impostor:** everyone knows the secret word except the impostor(s). Before the reveal the group picks who they suspect.
+- **Impostor:** everyone knows the secret word except the impostor(s), who can get a small tip (topic and first letter, switchable). Before the reveal the group picks who they suspect.
 - **Spy:** everyone is at the same place except the spy.
 - **Werewolf:** a moderator screen keeps track for you. Tap who is chosen, deaths, lovers, potions and wins are tracked automatically, and a voice reads the narration aloud (browser speech, toggle in the game). Roles: werewolf, seer, witch, hunter, Cupid, guardian, little girl, village idiot, elder, villager. Optional separate narrator.
 - **Who would rather:** 30 questions, everyone points at the same time. Every third card is an A-or-B choice.
 - **Bomb:** name something for the topic and pass the phone before it explodes. Optional hands-free mode: a quick jolt of the phone passes the bomb, no tapping (needs a motion sensor).
 - **Never have I ever**, **Truth or dare**, **Who am I?** (one phone).
+- **2 Player Duels:** tug of war, quick draw, tic-tac-toe and rock paper scissors on one phone, players sit opposite each other.
+- **4 Player Games:** tap race and "last one calm" for up to four players around one phone (2x2 grid, top row mirrored).
 - **Dots and boxes** (Käsekästchen): 2 to 4 players, one phone or online.
 - **Sketch it:** one player draws, the others guess (online only).
 - **Spectrum:** one player knows a hidden spot between two opposites and gives a hint, the others place it (online only).
@@ -96,6 +98,8 @@ server {
     }
 }
 ```
+
+Randomness: shuffles and picks use the system's cryptographic random generator. Impostor words and Spy places are not repeated for a while in the same browser.
 
 ## Own content and app install
 
