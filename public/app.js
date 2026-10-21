@@ -81,6 +81,7 @@ var SPEECH = { en: 'en-US', de: 'de-DE', nl: 'nl-NL', fr: 'fr-FR', es: 'es-ES' }
 function canSpeak() { return !!(window.speechSynthesis && window.SpeechSynthesisUtterance); }
 function speak(text, force) {
   if (!canSpeak() || (!voiceOn && !force) || !text) return;
+  if (!force && S.screen === 'wolfPlay' && S.g && S.g.narr) return; /* a human narrator reads it out */
   try {
     var ss = window.speechSynthesis, u = new SpeechSynthesisUtterance(text), code = SPEECH[lang] || lang;
     u.lang = code; u.rate = 0.92;
@@ -290,7 +291,7 @@ V.spyPlay = function () {
 /* Werewolf */
 function nPlayers() { return S.screen === 'room' && S.on.R ? S.on.R.players.length : S.players.length; }
 function wolfCounts(online) {
-  var c = S.cfg.wolf, n = online ? nPlayers() : S.players.length - (c.narrator ? 1 : 0);
+  var c = S.cfg.wolf, n = online ? nPlayers() : S.players.length;
   var sp = SPECIALS.filter(function (r) { return c.on[r]; }).length;
   var maxW = Math.max(1, n - sp - 1);
   var w = c.wolves > 0 ? c.wolves : Math.max(1, Math.round(n / 4));
@@ -304,12 +305,12 @@ V.wolfSetup = function () {
   return top(t('g.wolf')) +
     '<div class="panel"><div class="label">' + T('wolf.special') + '</div>' + tg + '</div>' +
     stepper(t('wolf.count'), k.w, 'wolves') +
-    '<div class="panel">' + toggle(t('wolf.narr'), t('wolf.narr.d'), c.narrator, 'narrator') + '</div>' +
     '<div class="panel"><div class="label">' + T('wolf.dist') + '</div><ul class="list">' +
     '<li><span>' + T('wolf.count') + '</span><span>' + k.w + '</span></li>' +
     '<li><span>' + T('wolf.specials') + '</span><span>' + k.sp + '</span></li>' +
     '<li><span>' + T('wolf.villagers') + '</span><span>' + Math.max(0, k.vill) + '</span></li></ul>' +
     (k.ok ? '' : '<p class="hint">' + T('wolf.more') + '</p>') + '</div>' +
+    '<div class="panel">' + toggle(t('wolf.narr'), t('wolf.narr.d'), c.narrator, 'narrator') + '</div>' +
     '<button class="btn lilac" data-act="wolfStart"' + (k.ok ? '' : ' disabled') + '>' + T('wolf.deal') + '</button>';
 };
 var NAR = { cupid: 'nar.cupid', guardian: 'nar.guardian', wolves: 'nar.wolves', seer: 'nar.seer', witch: 'nar.witch' };
@@ -390,7 +391,7 @@ V.wolfPlay = function () {
       '<button class="btn lilac" data-act="go" data-a="home">' + T('bomb.finish') + '</button>';
   }
   S.after = function () { if (g.speakKey !== wolfKey(W)) { g.speakKey = wolfKey(W); var sp = wolfSpeech(W); g.sayNight = false; speak(sp); } };
-  return '<div class="stage"><span class="tag ' + (tagNight ? 'night' : 'day') + '">' + (tagNight ? T('wolf.night') : T('wolf.day')) + ' ' + W.night + '</span>' + body +
+  return '<div class="stage"><span class="tag ' + (tagNight ? 'night' : 'day') + '">' + (tagNight ? T('wolf.night') : T('wolf.day')) + ' ' + W.night + '</span>' + (g.narr ? '<p class="hint">' + T('wolf.narrOn') + '</p>' : '') + body +
     '<div class="row">' + voiceBtn() + (canSpeak() ? '<button class="chip" data-act="wsay">' + T('voice.again') + '</button>' : '') + '<button class="chip" data-act="wreveal">' + T('wolf.rolesShow') + '</button></div>' + wolfBoard(W) + '</div>';
 };
 function wolfKey(W) { return W.phase + ':' + W.night + ':' + (W.step || '') + ':' + W.announce.length + ':' + (W.last ? W.last.kind + W.last.id : ''); }
@@ -687,8 +688,7 @@ A.spyStart = function () {
 
 /* Werewolf */
 A.wolfStart = function () {
-  var c = S.cfg.wolf, list = S.players.slice(), narr = null;
-  if (c.narrator) narr = list.shift();
+  var c = S.cfg.wolf, list = S.players.slice(), narr = c.narrator ? true : null;
   var k = wolfCounts();
   if (!k.ok) { toast(t('wolf.tooFew')); return; }
   var roles = [], i;
@@ -704,7 +704,7 @@ A.wolfStart = function () {
   });
   recordGame('werewolf');
   var cfg = { on: Object.assign({}, c.on) };
-  startPass(items, function () { go('wolfPlay', { W: TPWolf.create(assign, cfg), reveal: false, sel: [], heal: false, speakKey: '', sayNight: true }); });
+  startPass(items, function () { go('wolfPlay', { W: TPWolf.create(assign, cfg), narr: narr, reveal: false, sel: [], heal: false, speakKey: '', sayNight: true }); });
 };
 A.wsel = function (i) {
   var g = S.g, k = +i, p = g.sel.indexOf(k);
@@ -846,7 +846,7 @@ function init() {
     .then(function () { return getJson('locales/en.json'); })
     .then(function (j) { EN = j; L = EN; })
     .then(function () {
-      return api('GET', 'api/config').then(function (c) { server = c; return api('GET', 'api/custom').then(function (cu) { custom = cu || {}; }, function () { custom = {}; }); }).then(function () { return api('GET', 'api/me'); }).then(function (r) { me = r.user; }, function () { server = null; me = null; });
+      return api('GET', 'api/config').then(function (c) { server = c; try { document.getElementById('ver').textContent = 'v' + c.version; } catch (e) { /* ignore */ } return api('GET', 'api/custom').then(function (cu) { custom = cu || {}; }, function () { custom = {}; }); }).then(function () { return api('GET', 'api/me'); }).then(function (r) { me = r.user; }, function () { server = null; me = null; });
     })
     .then(function () {
       if (me && me.profile && me.profile.players && me.profile.players.length) { S.players = me.profile.players.slice(); }

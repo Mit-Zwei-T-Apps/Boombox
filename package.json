@@ -1,6 +1,6 @@
 {
   "name": "boombox",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Party games for a single phone (Impostor, Spy, Werewolf, Who would rather, Bomb). Self-hostable, optional accounts, multilingual.",
   "main": "server.js",
   "scripts": {

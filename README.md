@@ -23,7 +23,7 @@ Choose *Play online*, create a room, and share the 4-letter code. Everybody uses
 **Features**
 
 - 3 to 20 players, names are saved in the browser.
-- Languages: English (default), Deutsch, Nederlands, Français, Español. Easy to add more.
+- Languages: English (default), Deutsch, Nederlands, Français, Español. Easy to add more. The nl, fr and es texts are self-made and should be reviewed by native speakers.
 - Optional accounts: sign in to keep your player names and language on the server and use them on other devices. Guests lose nothing.
 - Role cards are revealed by swiping up (tap works too).
 - Show/hide button on password fields.
