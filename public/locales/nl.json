@@ -201,7 +201,14 @@
           "Lasagne",
           "Popcorn",
           "Cheesecake",
-          "Muesli"
+          "Muesli",
+          "Pannenkoeken",
+          "Burrito",
+          "Hotdog",
+          "Soep",
+          "Falafel",
+          "Croissant",
+          "Ramen"
         ]
       },
       "animals": {
@@ -221,7 +228,13 @@
           "Uil",
           "Flamingo",
           "Zeepaardje",
-          "Wasbeer"
+          "Wasbeer",
+          "Octopus",
+          "Panda",
+          "Kameel",
+          "Vleermuis",
+          "Schildpad",
+          "Wolf"
         ]
       },
       "places": {
@@ -241,7 +254,16 @@
           "Bowlingbaan",
           "Skihut",
           "Kapsalon",
-          "Shoarmazaak"
+          "Shoarmazaak",
+          "Luchthaven",
+          "Circus",
+          "Vuurtoren",
+          "Casino",
+          "Sauna",
+          "Kasteel",
+          "Strand",
+          "Boerderij",
+          "Sportschool"
         ]
       },
       "things": {
@@ -261,7 +283,16 @@
           "Gieter",
           "Trampoline",
           "Slaapzak",
-          "Broodrooster"
+          "Broodrooster",
+          "Spiegel",
+          "Kaars",
+          "Schaar",
+          "Kompas",
+          "Ladder",
+          "Deken",
+          "Camera",
+          "Lamp",
+          "Sleutel"
         ]
       },
       "jobs": {
@@ -281,7 +312,13 @@
           "Tuinman",
           "Dierenarts",
           "DJ",
-          "Schoorsteenveger"
+          "Schoorsteenveger",
+          "Goochelaar",
+          "Boer",
+          "Loodgieter",
+          "Rechter",
+          "Strandwacht",
+          "Kapper"
         ]
       }
     },
@@ -478,6 +515,20 @@
         "Zacht",
         "Ruw"
       ]
+    ],
+    "rather": [
+      "Altijd 10 minuten te laat komen|Altijd 20 minuten te vroeg komen",
+      "Je telefoon verliezen|Je portemonnee verliezen",
+      "Voor altijd alleen pizza eten|Nooit meer pizza eten",
+      "Kunnen vliegen|Onzichtbaar zijn",
+      "Een maand geen internet|Een jaar geen muziek",
+      "Altijd zeggen wat je denkt|Nooit meer praten",
+      "In het verleden leven|In de toekomst leven",
+      "Beroemd zijn|Rijk zijn",
+      "Vechten tegen een eend ter grootte van een paard|Vechten tegen 100 paarden ter grootte van een eend",
+      "Nooit meer douchen|Nooit meer tandenpoetsen",
+      "Weten hoe je sterft|Weten wanneer je sterft",
+      "Een pauzeknop hebben|Een terugspoelknop hebben"
     ]
   },
   "onlineTitle": "Online spelen",
@@ -637,5 +688,48 @@
   "bx.you": "Jij bent aan de beurt! Tik op een lijn.",
   "bx.win": "{name} wint!",
   "bx.tie": "Gelijkspel!",
-  "appSub": "Partyspellen"
+  "appSub": "Partyspellen",
+  "pw.show": "Toon",
+  "pw.hide": "Verberg",
+  "voice.label": "Stem",
+  "voice.again": "Voorlezen",
+  "wolf.select": "Tik om te kiezen",
+  "wolf.deadRole": "Niemand met deze rol leeft nog. Doe toch alsof, zodat niemand het merkt, en ga door.",
+  "wolf.victim": "De wolven kozen {name}.",
+  "wolf.noVictim": "De wolven kozen niemand.",
+  "wolf.noShot": "Jager schiet niemand",
+  "wolf.out": "Wie valt af?",
+  "wolf.eliminate": "Elimineer",
+  "wolf.tieBtn": "Gelijkspel / niemand",
+  "wolf.board": "Spelers",
+  "nar.night": "De nacht valt. Iedereen sluit de ogen.",
+  "nar.cupid": "Cupido, open je ogen en kies twee geliefden. Ga daarna weer slapen.",
+  "nar.guardian": "Beschermer, open je ogen en kies iemand om te beschermen. Ga daarna weer slapen.",
+  "nar.wolves": "Weerwolven, open jullie ogen en kies een slachtoffer. Ga daarna weer slapen.",
+  "nar.seer": "Ziener, open je ogen en wijs iemand aan. Ga daarna weer slapen.",
+  "nar.witch": "Heks, open je ogen. Wil je een drankje gebruiken? Ga daarna weer slapen.",
+  "nar.dawn": "Het dorp wordt wakker.",
+  "nar.noDeaths": "Vannacht is niemand gestorven.",
+  "nar.died": "Vannacht gestorven: {names}.",
+  "nar.hunter": "De jager is gedood en neemt iemand mee. Kies nu.",
+  "nar.vote": "Bespreek en stem. Wie moet afvallen?",
+  "nar.tie": "Gelijkspel. Niemand valt af.",
+  "nar.elim": "{name} valt af en was {role}.",
+  "nar.idiot": "{name} is de dorpsgek en overleeft, maar mag niet meer stemmen.",
+  "wq.or": "of",
+  "wq.rulesAB": "Iedereen kiest: A of B. Tel de handen en bespreek waarom.",
+  "imp.who": "Wie is de bedrieger?",
+  "imp.whoHint": "Bespreek het en kies dan de speler die de groep het meest verdenkt.",
+  "imp.suggest": "Tip: stel iedereen nog een vraag over het woord voordat je beslist.",
+  "imp.accuse": "Beschuldigen",
+  "imp.caught": "Gepakt! De groep heeft de bedrieger gevonden.",
+  "imp.missed": "Fout! De bedrieger is ontsnapt.",
+  "imp.skipVote": "Overslaan, direct onthullen",
+  "imp.accused": "De groep beschuldigt: {name}",
+  "pass.swipe": "Veeg omhoog om te onthullen",
+  "pass.orTap": "of tik",
+  "bomb.motion": "Handsfree",
+  "bomb.motionHint": "Geef de telefoon gewoon door. Een korte ruk geeft de bom door, tikken hoeft niet.",
+  "bomb.motionPass": "Geef de telefoon aan de volgende speler.",
+  "bomb.motionDenied": "Toegang tot bewegingssensoren is geweigerd."
 }

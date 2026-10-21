@@ -74,6 +74,27 @@ function beep(freq, dur, vol) {
     o.stop(audio.currentTime + dur + 0.02);
   } catch (e) { /* no audio */ }
 }
+var KEY_VOICE = 'boombox.voice';
+var voiceOn = true;
+try { voiceOn = localStorage.getItem(KEY_VOICE) !== '0'; } catch (e) { /* ignore */ }
+var SPEECH = { en: 'en-US', de: 'de-DE', nl: 'nl-NL', fr: 'fr-FR', es: 'es-ES' };
+function canSpeak() { return !!(window.speechSynthesis && window.SpeechSynthesisUtterance); }
+function speak(text, force) {
+  if (!canSpeak() || (!voiceOn && !force) || !text) return;
+  try {
+    var ss = window.speechSynthesis, u = new SpeechSynthesisUtterance(text), code = SPEECH[lang] || lang;
+    u.lang = code; u.rate = 0.92;
+    var vs = ss.getVoices ? ss.getVoices() : [], v = null, i;
+    for (i = 0; i < vs.length && !v; i++) if (vs[i].lang && vs[i].lang.replace('_', '-').toLowerCase() === code.toLowerCase()) v = vs[i];
+    for (i = 0; i < vs.length && !v; i++) if (vs[i].lang && vs[i].lang.slice(0, 2).toLowerCase() === lang) v = vs[i];
+    if (v) u.voice = v;
+    ss.cancel(); ss.speak(u);
+  } catch (e) { /* ignore */ }
+}
+function stopSpeak() { try { if (canSpeak()) window.speechSynthesis.cancel(); } catch (e) { /* ignore */ } }
+function voiceBtn() {
+  return canSpeak() ? '<button class="chip' + (voiceOn ? ' on' : '') + '" data-act="voice" aria-pressed="' + (voiceOn ? 'true' : 'false') + '">' + (voiceOn ? '🔊 ' : '🔇 ') + T('voice.label') + '</button>' : '';
+}
 function buzz(p) { try { if (navigator.vibrate) navigator.vibrate(p); } catch (e) { /* ignore */ } }
 function go(screen, extra, keepMsg) {
   stopAll(); S.screen = screen; if (!keepMsg) S.msg = null;
@@ -147,7 +168,9 @@ function toggle(label, sub, on, key) {
     (sub ? '<small>' + esc(sub) + '</small>' : '') + '</span><i class="sw' + (on ? ' on' : '') + '"></i></button>';
 }
 function field(id, label, type, extra) {
-  return '<div class="field"><label for="' + id + '">' + esc(label) + '</label><input id="' + id + '" name="' + id + '" type="' + type + '" ' + (extra || '') + ' required></div>';
+  var input = '<input id="' + id + '" name="' + id + '" type="' + type + '" ' + (extra || '') + ' required>';
+  if (type === 'password') input = '<div class="pw">' + input + '<button type="button" class="pwb" data-act="pwshow" data-a="' + id + '" aria-label="' + T('pw.show') + '" aria-pressed="false">' + T('pw.show') + '</button></div>';
+  return '<div class="field"><label for="' + id + '">' + esc(label) + '</label>' + input + '</div>';
 }
 function bombSvg() {
   return '<svg class="bomb" id="bomb" viewBox="0 0 120 130" aria-hidden="true">' +
@@ -187,13 +210,26 @@ V.players = function () {
 };
 
 /* hand-the-phone-around flow shared by Impostor, Spy, Werewolf */
+function swipeInit() {
+  var el = document.getElementById('swc'); if (!el) return;
+  var y0 = null, dy = 0;
+  el.addEventListener('pointerdown', function (e) { y0 = e.clientY; dy = 0; el.style.transition = 'none'; try { el.setPointerCapture(e.pointerId); } catch (x) { /* ignore */ } });
+  el.addEventListener('pointermove', function (e) { if (y0 === null) return; dy = Math.min(0, e.clientY - y0); el.style.transform = 'translateY(' + dy + 'px)'; });
+  function end() {
+    if (y0 === null) return; y0 = null;
+    if (dy < -Math.min(160, el.offsetHeight * 0.4)) { el.style.transition = 'transform .18s'; el.style.transform = 'translateY(-110%)'; setTimeout(function () { A.pshow(); }, 150); }
+    else { el.style.transition = 'transform .2s'; el.style.transform = ''; }
+  }
+  el.addEventListener('pointerup', end); el.addEventListener('pointercancel', end);
+}
 V.pass = function () {
   var P = S.pass, it = P.items[P.i];
   var pr = '<div class="prog"><i style="width:' + Math.round(P.i / P.items.length * 100) + '%"></i></div>';
   if (!P.shown) {
-    return pr + '<div class="stage"><p class="kicker">' + T('pass.hand') + '</p><h2 class="big">' + esc(it.name) + '</h2>' +
-      '<p class="hint">' + T('pass.only') + '</p>' +
-      '<button class="btn" data-act="pshow">' + T('pass.iam', { name: it.name }) + '</button>' +
+    S.after = swipeInit;
+    return pr + '<div class="stage"><div class="swipe"><div class="under">' + it.html + '</div><div class="cover" id="swc"><p class="kicker">' + T('pass.hand') + '</p><h2 class="big">' + esc(it.name) + '</h2>' +
+      '<p class="hint">' + T('pass.only') + '</p><div class="up">&#9650;<br>' + T('pass.swipe') + '</div></div></div>' +
+      '<button class="btn alt small" data-act="pshow">' + T('pass.orTap') + ': ' + T('pass.iam', { name: it.name }) + '</button>' +
       '<p class="kicker">' + T('pass.of', { i: P.i + 1, n: P.items.length }) + '</p></div>';
   }
   var last = P.i === P.items.length - 1;
@@ -213,13 +249,21 @@ V.impSetup = function () {
     stepper(t('imp.count'), c.n, 'imp', t('imp.hint', { n: n, max: maxI })) +
     '<button class="btn coral" data-act="impStart">' + T('imp.deal') + '</button>';
 };
+function impVote(g) {
+  var chips = S.players.map(function (nm) { return '<button class="chip' + (g.acc === nm ? ' on' : '') + '" data-act="impacc" data-a="' + esc(nm) + '">' + esc(nm) + '</button>'; }).join('');
+  return '<div class="panel"><div class="label">' + T('imp.who') + '</div><p class="hint">' + T('imp.whoHint') + '</p><div class="chips">' + chips + '</div></div>' +
+    '<button class="btn coral" data-act="reveal"' + (g.acc ? '' : ' disabled') + '>' + T('imp.accuse') + '</button><button class="btn alt small" data-act="impskip">' + T('imp.skipVote') + '</button>';
+}
+A.impwho = function () { S.g.vote = true; S.g.acc = null; render(); };
+A.impacc = function (n) { S.g.acc = n; render(); };
+A.impskip = function () { S.g.acc = null; stopAll(); S.g.reveal = true; render(); };
 V.impPlay = function () {
   var g = S.g;
   var res = g.reveal ?
-    '<div class="role r-coral"><p class="kicker">' + T('revealed') + '</p><h2>' + g.imps.map(esc).join(T('imp.and')) + '</h2><p>' + T(g.imps.length > 1 ? 'imp.wasN' : 'imp.was1') + '</p></div>' +
+    (g.acc ? '<div class="panel"><p>' + T('imp.accused', { name: g.acc }) + '</p><p><b>' + T(g.imps.indexOf(g.acc) !== -1 ? 'imp.caught' : 'imp.missed') + '</b></p></div>' : '') + '<div class="role r-coral"><p class="kicker">' + T('revealed') + '</p><h2>' + g.imps.map(esc).join(T('imp.and')) + '</h2><p>' + T(g.imps.length > 1 ? 'imp.wasN' : 'imp.was1') + '</p></div>' +
     '<div class="role r-lemon"><p class="kicker">' + T('imp.theWord') + '</p><h2>' + esc(g.word) + '</h2></div>' +
     '<div class="row"><button class="btn alt" data-act="impStart">' + T('newRound') + '</button><button class="btn" data-act="go" data-a="home">' + T('overview') + '</button></div>' :
-    '<button class="btn coral" data-act="reveal">' + T('imp.vote') + '</button>';
+    (g.vote ? impVote(g) : '<div class="panel"><p class="hint">' + T('imp.suggest') + '</p></div><button class="btn coral" data-act="impwho">' + T('imp.vote') + '</button>');
   return '<div class="stage"><p class="kicker">' + T('starts') + '</p><h2 class="big">' + esc(g.starter) + '</h2>' +
     '<p class="hint">' + T('imp.rules') + '</p>' +
     (g.reveal ? '' : '<div class="panel"><div class="label">' + T('imp.discuss') + '</div><div class="clock" id="clock">3:00</div><button class="btn alt" data-act="clock" data-a="180">' + T('imp.timer') + '</button></div>') +
@@ -268,31 +312,98 @@ V.wolfSetup = function () {
     (k.ok ? '' : '<p class="hint">' + T('wolf.more') + '</p>') + '</div>' +
     '<button class="btn lilac" data-act="wolfStart"' + (k.ok ? '' : ' disabled') + '>' + T('wolf.deal') + '</button>';
 };
-function wolfSteps() {
-  var g = S.g;
-  return g.steps.filter(function (s) { return !(s.first && g.night > 1); });
+var NAR = { cupid: 'nar.cupid', guardian: 'nar.guardian', wolves: 'nar.wolves', seer: 'nar.seer', witch: 'nar.witch' };
+function wolfBoard(W) {
+  return '<div class="panel"><div class="label">' + T('wolf.board') + '</div><div class="chips">' + W.players.map(function (p) {
+    return '<span class="chip' + (p.alive ? '' : ' dead') + '">' + esc(p.name) + (p.alive ? '' : ' ✝') + '</span>';
+  }).join('') + '</div></div>';
+}
+function wolfChips(W, idxs, sel) {
+  return '<div class="chips">' + idxs.map(function (i) {
+    return '<button class="chip' + (sel.indexOf(i) !== -1 ? ' on' : '') + '" data-act="wsel" data-a="' + i + '">' + esc(W.players[i].name) + '</button>';
+  }).join('') + '</div>';
+}
+function wolfDeaths(W) {
+  return W.announce.map(function (i) { return W.players[i].name + ' (' + t('role.' + W.players[i].role) + ')'; }).join(', ');
+}
+/* the text the moderator voice reads for the current screen */
+function wolfSpeech(W) {
+  var X = S.g, p = W.phase;
+  if (p === 'night') return (X.sayNight ? t('nar.night') + ' ' : '') + t(NAR[W.step]);
+  if (p === 'dawn') return t('nar.dawn') + ' ' + (W.announce.length ? t('nar.died', { names: wolfDeaths(W) }) : t('nar.noDeaths'));
+  if (p === 'hunter') return t('nar.hunter');
+  if (p === 'vote') return t('nar.vote');
+  if (p === 'voteResult') return W.last.kind === 'elim' ? t('nar.elim', { name: W.players[W.last.id].name, role: t('role.' + W.players[W.last.id].role) }) : W.last.kind === 'idiot' ? t('nar.idiot', { name: W.players[W.last.id].name }) : t('nar.tie');
+  if (p === 'end') return t(W.winner === 'village' ? 'ww.winVillage' : 'ww.winWolves');
+  return '';
 }
 V.wolfPlay = function () {
-  var g = S.g;
+  var g = S.g, W = g.W;
   if (g.reveal) {
-    var rows = g.assign.map(function (a) { return '<li><span>' + esc(a.name) + '</span><span>' + T('role.' + a.role) + '</span></li>'; }).join('');
+    var rows = W.players.map(function (a) { return '<li><span>' + esc(a.name) + (a.alive ? '' : ' ✝') + '</span><span>' + T('role.' + a.role) + '</span></li>'; }).join('');
     return top(t('wolf.rolesTitle'), 'home') + '<div class="panel"><div class="label">' + T('wolf.whoWas') + '</div><ul class="list">' + rows + '</ul></div>' +
       '<button class="btn alt" data-act="unreveal">' + T('wolf.backGame') + '</button>';
   }
-  var steps = wolfSteps(), s = steps[Math.min(g.step, steps.length - 1)];
-  return '<div class="stage"><span class="tag ' + (s.night ? 'night' : 'day') + '">' + (s.night ? T('wolf.night') : T('wolf.day')) + ' ' + (s.night ? g.night : g.night) + '</span>' +
-    '<p class="script">' + T(s.key) + '</p>' +
-    '<div class="prog"><i style="width:' + Math.round((g.step + 1) / steps.length * 100) + '%"></i></div>' +
-    (g.step < steps.length - 1 ?
-      '<button class="btn lilac" data-act="wnext">' + T('wolf.next') + '</button>' :
-      '<button class="btn lilac" data-act="wnight">' + T('wolf.nextNight') + '</button>') +
-    '<div class="row"><button class="btn alt small" data-act="wprev"' + (g.step === 0 ? ' disabled' : '') + '>' + T('wolf.prev') + '</button><button class="btn alt small" data-act="wreveal">' + T('wolf.rolesShow') + '</button></div>' +
-    '<p class="hint">' + (g.narrator ? T('wolf.narrIs', { name: g.narrator }) : T('wolf.reader')) + '</p></div>';
+  var sel = g.sel || [], body = '', p = W.phase, tagNight = p === 'night';
+  var alive = TPWolf.alive(W);
+  if (p === 'night') {
+    var st = W.step, who = TPWolf.actors(W, st), targets = alive.slice();
+    g.max = 1;
+    if (st === 'cupid') g.max = 2;
+    if (st === 'guardian') targets = alive.filter(function (i) { return i !== W.lastGuard; });
+    if (st === 'wolves') targets = alive.filter(function (i) { return W.players[i].role !== 'werewolf'; });
+    if (st === 'seer') targets = alive.filter(function (i) { return W.players[i].role !== 'seer'; });
+    if (st === 'witch') targets = alive.filter(function (i) { return W.players[i].role !== 'witch'; });
+    body = '<p class="script">' + T(NAR[st]) + '</p>';
+    if (!who.length) {
+      body += '<p class="hint">' + T('wolf.deadRole') + '</p><button class="btn lilac" data-act="wgo">' + T('wolf.next') + '</button>';
+    } else if (st === 'witch') {
+      body += '<div class="panel">' + (W.act.victim !== null ? '<p>' + T('wolf.victim', { name: W.players[W.act.victim].name }) + '</p>' : '<p>' + T('wolf.noVictim') + '</p>') +
+        (W.potions.heal && W.act.victim !== null ? '<button class="chip' + (g.heal ? ' on' : '') + '" data-act="wheal">' + T('ww.heal') + '</button>' : '') +
+        (W.potions.poison ? '<div class="label">' + T('ww.poison') + '</div>' + wolfChips(W, targets, sel) : '') + '</div>' +
+        '<button class="btn lilac" data-act="wgo">' + T('ww.confirm') + '</button>';
+    } else {
+      var seerRes = '';
+      if (st === 'seer' && sel.length === 1) seerRes = '<p class="ok">' + T(W.players[sel[0]].role === 'werewolf' ? 'ww.seerRes' : 'ww.seerNo', { name: W.players[sel[0]].name }) + '</p>';
+      body += '<div class="panel"><div class="label">' + T('wolf.select') + '</div>' + wolfChips(W, targets, sel) + seerRes + '</div>' +
+        '<button class="btn lilac" data-act="wgo"' + (sel.length === g.max ? '' : ' disabled') + '>' + T('ww.confirm') + '</button>';
+    }
+  } else if (p === 'dawn') {
+    body = '<p class="script">' + T('nar.dawn') + '</p><div class="panel">' + (W.announce.length ? '<p>' + T('nar.died', { names: wolfDeaths(W) }) + '</p>' : '<p>' + T('nar.noDeaths') + '</p>') + '</div>' +
+      '<button class="btn lilac" data-act="wgo">' + T('wolf.next') + '</button>';
+  } else if (p === 'hunter') {
+    g.max = 1;
+    body = '<p class="script">' + T('nar.hunter') + '</p><div class="panel">' + wolfChips(W, alive, sel) + '</div>' +
+      '<button class="btn lilac" data-act="wgo"' + (sel.length ? '' : ' disabled') + '>' + T('ww.confirm') + '</button>' +
+      '<button class="btn alt small" data-act="wnone">' + T('wolf.noShot') + '</button>';
+  } else if (p === 'vote') {
+    g.max = 1;
+    var voters = alive;
+    body = '<p class="script">' + T('nar.vote') + '</p><div class="panel"><div class="label">' + T('wolf.out') + '</div>' + wolfChips(W, voters, sel) + '</div>' +
+      '<button class="btn lilac" data-act="wgo"' + (sel.length ? '' : ' disabled') + '>' + T('wolf.eliminate') + '</button>' +
+      '<button class="btn alt small" data-act="wnone">' + T('wolf.tieBtn') + '</button>';
+  } else if (p === 'voteResult') {
+    body = '<div class="panel"><p>' + esc(wolfSpeech(W)) + '</p></div><button class="btn lilac" data-act="wgo">' + T('wolf.next') + '</button>';
+  } else {
+    body = '<div class="role ' + (W.winner === 'village' ? 'r-aqua' : 'r-coral') + '"><h2>' + T(W.winner === 'village' ? 'ww.winVillage' : 'ww.winWolves') + '</h2></div>' +
+      '<div class="panel"><ul class="list">' + W.players.map(function (a) { return '<li><span>' + esc(a.name) + (a.alive ? '' : ' ✝') + '</span><span>' + T('role.' + a.role) + '</span></li>'; }).join('') + '</ul></div>' +
+      '<button class="btn lilac" data-act="go" data-a="home">' + T('bomb.finish') + '</button>';
+  }
+  S.after = function () { if (g.speakKey !== wolfKey(W)) { g.speakKey = wolfKey(W); var sp = wolfSpeech(W); g.sayNight = false; speak(sp); } };
+  return '<div class="stage"><span class="tag ' + (tagNight ? 'night' : 'day') + '">' + (tagNight ? T('wolf.night') : T('wolf.day')) + ' ' + W.night + '</span>' + body +
+    '<div class="row">' + voiceBtn() + (canSpeak() ? '<button class="chip" data-act="wsay">' + T('voice.again') + '</button>' : '') + '<button class="chip" data-act="wreveal">' + T('wolf.rolesShow') + '</button></div>' + wolfBoard(W) + '</div>';
 };
+function wolfKey(W) { return W.phase + ':' + W.night + ':' + (W.step || '') + ':' + W.announce.length + ':' + (W.last ? W.last.kind + W.last.id : ''); }
 
 /* Who would rather */
 V.wouldrather = function () {
-  var Q = S.q;
+  var Q = S.q, ab = Q.i % 3 === 2;
+  if (ab) {
+    var pr = Q.pairs[Q.pi % Q.pairs.length].split('|');
+    return top(t('g.wouldrather')) + '<div class="stage"><p class="kicker">' + T('wouldrather', { n: Q.i + 1 }) + '</p>' +
+      '<div class="ab"><div class="opt oa"><b>A</b><p class="q">' + esc(pr[0]) + '</p></div><div class="or">' + T('wq.or') + '</div><div class="opt ob"><b>B</b><p class="q">' + esc(pr[1]) + '</p></div></div>' +
+      '<p class="hint">' + T('wq.rulesAB') + '</p><button class="btn aqua" data-act="qnext">' + T('wq.next') + '</button></div>';
+  }
   return top(t('g.wouldrather')) + '<div class="stage"><p class="kicker">' + T('wouldrather', { n: Q.i + 1 }) + '</p><p class="q">' + esc(Q.order[Q.i]) + '</p>' +
     '<p class="hint">' + T('wq.rules') + '</p><button class="btn aqua" data-act="qnext">' + T('wq.next') + '</button></div>';
 };
@@ -305,12 +416,38 @@ V.bomb = function () {
       '<p class="kicker">' + T('bomb.topic') + '</p><p class="q">' + esc(B.prompt) + '</p>' +
       '<p class="hint">' + T('bomb.rules') + '</p>' +
       '<p class="kicker">' + T('bomb.startsAt', { name: S.players[B.holder] }) + '</p>' +
+      (window.DeviceMotionEvent ? '<button class="chip' + (bMotion ? ' on' : '') + '" data-act="bmotion" aria-pressed="' + (bMotion ? 'true' : 'false') + '">' + T('bomb.motion') + ': ' + T(bMotion ? 'on' : 'off') + '</button><p class="hint">' + T('bomb.motionHint') + '</p>' : '') +
       '<button class="btn pink" data-act="arm">' + T('bomb.arm') + '</button>' +
       '<button class="btn alt small" data-act="snd">' + T('bomb.sound', { state: t(soundOn ? 'on' : 'off') }) + '</button></div>';
   }
   return '<div class="stage">' + bombSvg() + '<p class="kicker">' + esc(B.prompt) + '</p>' +
     '<h2 class="big">' + esc(S.players[B.holder]) + '</h2><p class="hint">' + T('bomb.say') + '</p>' +
-    '<button class="btn pink" data-act="bpass">' + T('bomb.pass', { name: S.players[(B.holder + 1) % S.players.length] }) + '</button></div>';
+    (bMotion ? '<p class="hint">' + T('bomb.motionPass') + '</p>' : '') +
+    '<button class="btn ' + (bMotion ? 'alt small' : 'pink') + '" data-act="bpass">' + T('bomb.pass', { name: S.players[(B.holder + 1) % S.players.length] }) + '</button></div>';
+};
+/* Hands-free mode: passing the phone on is detected as a jolt by the motion sensor */
+var bMotion = false;
+try { bMotion = localStorage.getItem('boombox.bmotion') === '1'; } catch (e) { /* ignore */ }
+var motionFn = null;
+function motionStop() { if (motionFn) { window.removeEventListener('devicemotion', motionFn); motionFn = null; } }
+function motionStart() {
+  motionStop();
+  var last = null, armedAt = Date.now(), lastHit = 0;
+  motionFn = function (e) {
+    var a = e.accelerationIncludingGravity || e.acceleration; if (!a) return;
+    var m = Math.sqrt((a.x || 0) * (a.x || 0) + (a.y || 0) * (a.y || 0) + (a.z || 0) * (a.z || 0)), now = Date.now();
+    if (!S.b || !S.b.armed || S.screen !== 'bomb') { motionStop(); return; }
+    var d = last === null ? 0 : Math.abs(m - last); last = m;
+    if (d > 9 && now - lastHit > 1300 && now - armedAt > 900) { lastHit = now; A.bpass(); }
+  };
+  window.addEventListener('devicemotion', motionFn);
+}
+A.bmotion = function () {
+  bMotion = !bMotion; try { localStorage.setItem('boombox.bmotion', bMotion ? '1' : '0'); } catch (e) { /* ignore */ }
+  if (bMotion && window.DeviceMotionEvent && typeof DeviceMotionEvent.requestPermission === 'function') {
+    DeviceMotionEvent.requestPermission().then(function (r) { if (r !== 'granted') { bMotion = false; toast(t('bomb.motionDenied')); render(); } }, function () { bMotion = false; render(); });
+  }
+  render();
 };
 V.boom = function () {
   var B = S.b;
@@ -349,7 +486,7 @@ V.never = function () {
     '<p class="hint">' + T('never.rules') + '</p><button class="btn lemon" data-act="nnext">' + T('wq.next') + '</button></div>';
 };
 A.nnext = function () {
-  var Q = S.q; Q.i++;
+  var Q = S.q; if (Q.i % 3 === 2) Q.pi++; Q.i++;
   if (Q.i >= Q.order.length) { Q.order = shuffle(D('never')); Q.i = 0; toast(t('wq.again')); }
   render();
 };
@@ -479,7 +616,7 @@ A.game = function (id) {
   if (id === 'impostor') go('impSetup');
   else if (id === 'spy') go('spySetup');
   else if (id === 'wolf') go('wolfSetup');
-  else if (id === 'wouldrather') { S.q = { order: shuffle(D('questions')), i: 0 }; recordGame('wouldrather'); go('wouldrather'); }
+  else if (id === 'wouldrather') { S.q = { order: shuffle(D('questions')), i: 0, pairs: shuffle(D('rather')), pi: 0 }; recordGame('wouldrather'); go('wouldrather'); }
   else if (id === 'never') { S.q = { order: shuffle(D('never')), i: 0 }; recordGame('never'); go('never'); }
   else if (id === 'truth') { S.tod = { who: Math.floor(Math.random() * n), card: null, used: [] }; recordGame('truth'); go('truth'); }
   else if (id === 'whoami') { S.wh = { i: 0, scores: {}, order: shuffle(allWords()), w: 0, running: false, got: 0, skipped: [], turn: null }; recordGame('whoami'); go('whoami'); }
@@ -565,21 +702,35 @@ A.wolfStart = function () {
     var extra = a.role === 'werewolf' && wolves.length > 1 ? '<p>' + T('wolf.pack', { names: wolves.filter(function (x) { return x !== a.name; }).join(', ') }) + '</p>' : '';
     return { name: a.name, html: '<div class="role ' + ROLE_CLS[a.role] + '"><p class="kicker">' + T('wolf.yourRole') + '</p><h2>' + T('role.' + a.role).toUpperCase() + '</h2><p>' + T('role.' + a.role + '.t') + '</p>' + extra + '</div>' };
   });
-  var steps = [{ night: true, key: 'wolf.n1' }];
-  if (c.on.cupid) steps.push({ night: true, key: 'wolf.nCupid', first: true });
-  if (c.on.guardian) steps.push({ night: true, key: 'wolf.nGuardian' });
-  steps.push({ night: true, key: 'wolf.nWolves' });
-  if (c.on.seer) steps.push({ night: true, key: 'wolf.nSeer' });
-  if (c.on.witch) steps.push({ night: true, key: 'wolf.nWitch' });
-  steps.push({ night: false, key: 'wolf.d1' });
-  if (c.on.hunter) steps.push({ night: false, key: 'wolf.dHunter' });
-  steps.push({ night: false, key: 'wolf.dVote' });
-  recordGame('wolf');
-  startPass(items, function () { go('wolfPlay', { steps: steps, step: 0, night: 1, assign: assign, reveal: false, narrator: narr }); });
+  recordGame('werewolf');
+  var cfg = { on: Object.assign({}, c.on) };
+  startPass(items, function () { go('wolfPlay', { W: TPWolf.create(assign, cfg), reveal: false, sel: [], heal: false, speakKey: '', sayNight: true }); });
 };
-A.wnext = function () { S.g.step++; render(); };
-A.wprev = function () { if (S.g.step > 0) { S.g.step--; render(); } };
-A.wnight = function () { S.g.night++; S.g.step = 0; render(); };
+A.wsel = function (i) {
+  var g = S.g, k = +i, p = g.sel.indexOf(k);
+  if (p !== -1) g.sel.splice(p, 1); else { if (g.sel.length >= (g.max || 1)) g.sel.shift(); g.sel.push(k); }
+  render();
+};
+A.wheal = function () { S.g.heal = !S.g.heal; render(); };
+function wolfDone() { S.g.sel = []; S.g.heal = false; render(); window.scrollTo(0, 0); }
+A.wgo = function () {
+  var g = S.g, W = g.W, p = W.phase, sel = g.sel.slice();
+  if (p === 'night') { var wasLast = TPWolf.actors(W, W.step).length === 0; TPWolf.submit(W, wasLast ? {} : { targets: sel, heal: g.heal }); }
+  else if (p === 'dawn') TPWolf.leaveDawn(W);
+  else if (p === 'hunter') TPWolf.shoot(W, sel[0]);
+  else if (p === 'vote') TPWolf.vote(W, sel[0]);
+  else if (p === 'voteResult') { var before = W.night; TPWolf.leaveVote(W); if (W.night !== before) g.sayNight = true; }
+  wolfDone();
+};
+A.wnone = function () { var W = S.g.W; if (W.phase === 'hunter') TPWolf.shoot(W, null); else if (W.phase === 'vote') TPWolf.vote(W, null); wolfDone(); };
+A.wsay = function () { speak(wolfSpeech(S.g.W), true); };
+A.voice = function () { voiceOn = !voiceOn; try { localStorage.setItem(KEY_VOICE, voiceOn ? '1' : '0'); } catch (e) { /* ignore */ } if (!voiceOn) stopSpeak(); else if (S.screen === 'wolfPlay') S.g.speakKey = ''; render(); };
+A.pwshow = function (id) {
+  var el = document.getElementById(id); if (!el) return;
+  var show = el.type === 'password';
+  el.type = show ? 'text' : 'password';
+  var b = el.parentNode.querySelector('.pwb'); if (b) { b.textContent = t(show ? 'pw.hide' : 'pw.show'); b.setAttribute('aria-pressed', show ? 'true' : 'false'); }
+};
 A.wreveal = function () { S.g.reveal = true; render(); };
 
 /* Who would rather */
@@ -599,16 +750,17 @@ function newBomb() {
 }
 A.arm = function () {
   var B = S.b; B.armed = true; beep(660, 0.08, 0.05);
-  var total = (12 + Math.random() * 24) * 1000, start = Date.now();
+  if (bMotion) motionStart();
+  var total = (6 + Math.random() * 54) * 1000, start = Date.now();
   render();
   function tick() {
     var el = Date.now() - start;
     if (el >= total) {
       B.scores[B.holder] = (B.scores[B.holder] || 0) + 1; B.armed = false;
       beep(120, 0.9, 0.2); beep(70, 1, 0.2); buzz([400, 80, 400]);
-      go('boom'); return;
+      motionStop(); go('boom'); return;
     }
-    var r = el / total;
+    var r = Math.max(0, Math.min(1, 1 - (total - el) / 8000));
     beep(700 + r * 500, 0.07, 0.07);
     var b = document.getElementById('bomb');
     if (b && b.animate && !matchMedia('(prefers-reduced-motion: reduce)').matches) b.animate([{ transform: 'scale(1)' }, { transform: 'scale(' + (1.08 + r * 0.12) + ')' }, { transform: 'scale(1)' }], { duration: 160 });
@@ -704,7 +856,7 @@ function init() {
       if (server && server.online && window.TPOnline) {
         var TPo = { S: S, V: V, A: A, F: F, t: t, T: T, esc: esc, has: function (k) { return L[k] !== undefined || EN[k] !== undefined; }, api: api, toast: toast, go: go, render: render,
           beep: beep, fmt: fmt, bombSvg: bombSvg, top: top, msgBox: msgBox, setMsg: setMsg, lang: function () { return lang; }, me: function () { return me; }, D: D,
-          stepper: stepper, toggle: toggle, SPECIALS: SPECIALS, wolfCounts: wolfCounts, serverOnline: function () { return true; } };
+          stepper: stepper, toggle: toggle, SPECIALS: SPECIALS, wolfCounts: wolfCounts, serverOnline: function () { return true; }, speak: speak, voiceBtn: voiceBtn, canSpeak: canSpeak };
         window.TPOnline(TPo);
         if (TPo.afterInit) TPo.afterInit();
       }

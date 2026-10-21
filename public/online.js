@@ -44,6 +44,25 @@ function drop() {
   if (O.es) { try { O.es.close(); } catch (e) { /* ignore */ } }
   clearInterval(O.clk); O.es = null; O.R = null; O.code = null; O.chat = []; O.sel = []; store(null);
 }
+var NARR = { cupid: 'nar.cupid', guardian: 'nar.guardian', wolves: 'nar.wolves', seer: 'nar.seer', witch: 'nar.witch' };
+/* the host's phone reads the moderator lines aloud so the room hears one voice */
+function narrate(g) {
+  if (!g || g.type !== 'wolf' || !isHost()) { if (!g || g.type !== 'wolf') O.nk = null; return; }
+  var k = g.phase + ':' + g.night + ':' + (g.narr || '') + ':' + (g.announce || []).length + ':' + (g.lastResult ? g.lastResult.kind + g.lastResult.id : '');
+  if (k === O.nk) return;
+  var first = !O.nk || O.nk.split(':')[1] !== String(g.night);
+  O.nk = k;
+  var txt = '', nm = function (id) { return pn(id); };
+  if (g.phase === 'night' && g.narr) txt = (first || g.narr === 'cupid' ? t('nar.night') + ' ' : '') + t(NARR[g.narr]);
+  else if (g.phase === 'announce') txt = t('nar.dawn') + ' ' + (g.announce.length ? t('nar.died', { names: g.announce.map(function (id) { var e = g.log.filter(function (x) { return x.k === 'died' && x.id === id; }).pop(); return nm(id) + (e ? ' (' + t('role.' + e.role) + ')' : ''); }).join(', ') }) : t('nar.noDeaths'));
+  else if (g.phase === 'hunter') txt = t('nar.hunter');
+  else if (g.phase === 'vote') txt = t('nar.vote');
+  else if (g.phase === 'voteResult' && g.lastResult) {
+    var r = g.lastResult;
+    txt = r.kind === 'elim' ? t('nar.elim', { name: nm(r.id), role: t('role.' + (g.log.filter(function (x) { return x.k === 'elim' && x.id === r.id; }).pop() || {}).role) }) : r.kind === 'idiot' ? t('nar.idiot', { name: nm(r.id) }) : t('nar.tie');
+  } else if (g.phase === 'end') txt = t(g.winner === 'village' ? 'ww.winVillage' : 'ww.winWolves');
+  if (txt) TP.speak(txt);
+}
 function onMessage(m) {
   if (m.t === 'state') {
     O.off = m.now - Date.now();
@@ -55,6 +74,7 @@ function onMessage(m) {
     if (prevAct !== nextAct) O.sel = [];
     var wasGame = !!(O.R && O.R.game);
     O.R = m;
+    narrate(g);
     if (!!g !== wasGame) window.scrollTo(0, 0);
     if (S.screen !== 'room') TP.go('room'); else TP.render();
     return;
@@ -403,6 +423,7 @@ function wolf(v) {
     return T('ww.tie');
   };
   var status = '';
+  var vb = isHost() && TP.canSpeak() ? '<div class="row">' + TP.voiceBtn() + '</div>' : '';
   if (v.phase === 'end') {
     var rows = v.players.map(function (id) { return '<li><span>' + esc(pn(id)) + '</span><span>' + T('role.' + v.roles[id]) + (v.alive[id] ? '' : ' ✝') + '</span></li>'; }).join('');
     return '<div class="stage"><div class="role r-' + (v.winner === 'village' ? 'aqua' : 'coral') + '"><h2>' + T(v.winner === 'village' ? 'ww.winVillage' : 'ww.winWolves') + '</h2></div>' +
@@ -447,7 +468,7 @@ function wolf(v) {
   var seer = v.seer && v.seer.length ? '<div class="panel"><ul class="list">' + v.seer.map(function (s) { return '<li><span>' + T(s.wolf ? 'ww.seerRes' : 'ww.seerNo', { name: pn(s.id) }) + '</span></li>'; }).join('') + '</ul></div>' : '';
   var alive = '<div class="panel"><ul class="list">' + v.players.map(function (id) { return '<li><span>' + esc(pn(id)) + '</span><span>' + T(v.alive[id] ? 'ww.alive' : 'ww.dead') + '</span></li>'; }).join('') + '</ul></div>';
   var hist = v.log.length ? '<div class="panel"><div class="label">' + T('ww.history') + '</div><ul class="list">' + v.log.slice().reverse().map(function (e) { return '<li><span>' + logLine(e) + '</span></li>'; }).join('') + '</ul></div>' : '';
-  out = '<div class="stage" style="text-align:left">' + role + body + seer + alive + hist +
+  out = '<div class="stage" style="text-align:left">' + role + vb + body + seer + alive + hist +
     (isHost() ? '<button class="btn alt small" data-act="oact" data-a="skip">' + T('ww.skipPhase') + '</button>' : '') + '</div>';
   void R;
   return out;

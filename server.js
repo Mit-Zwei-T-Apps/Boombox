@@ -23,7 +23,7 @@ const TRUST_PROXY = flag(env.TRUST_PROXY, false);
 const MAX_USERS = Math.max(1, parseInt(env.MAX_USERS, 10) || 1000);
 const USERNAME_RE = /^[A-Za-z0-9_.-]{3,24}$/;
 const ADMIN_USER = USERNAME_RE.test(env.ADMIN_USER || '') ? env.ADMIN_USER : 'admin';
-const GAMES = ['impostor', 'spy', 'werewolf', 'wouldrather', 'bomb', 'never', 'truth', 'whoami', 'sketch'];
+const GAMES = ['impostor', 'spy', 'werewolf', 'wouldrather', 'bomb', 'never', 'truth', 'whoami', 'sketch', 'boxes', 'spectrum'];
 const SESSION_DAYS = 30;
 
 fs.mkdirSync(DATA_DIR, { recursive: true });

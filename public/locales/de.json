@@ -201,7 +201,13 @@
           "Lasagne",
           "Popcorn",
           "Käsekuchen",
-          "Müsli"
+          "Müsli",
+          "Burrito",
+          "Bratwurst",
+          "Suppe",
+          "Falafel",
+          "Croissant",
+          "Ramen"
         ]
       },
       "animals": {
@@ -221,7 +227,13 @@
           "Eule",
           "Flamingo",
           "Seepferdchen",
-          "Waschbär"
+          "Waschbär",
+          "Krake",
+          "Panda",
+          "Kamel",
+          "Fledermaus",
+          "Schildkröte",
+          "Wolf"
         ]
       },
       "places": {
@@ -241,7 +253,15 @@
           "Bowlingbahn",
           "Skihütte",
           "Friseursalon",
-          "Dönerladen"
+          "Dönerladen",
+          "Zirkus",
+          "Leuchtturm",
+          "Casino",
+          "Sauna",
+          "Schloss",
+          "Strand",
+          "Bauernhof",
+          "Fitnessstudio"
         ]
       },
       "things": {
@@ -261,7 +281,16 @@
           "Gießkanne",
           "Trampolin",
           "Schlafsack",
-          "Toaster"
+          "Toaster",
+          "Spiegel",
+          "Kerze",
+          "Schere",
+          "Kompass",
+          "Leiter",
+          "Decke",
+          "Kamera",
+          "Lampe",
+          "Schlüssel"
         ]
       },
       "jobs": {
@@ -281,7 +310,14 @@
           "Gärtner",
           "Tierärztin",
           "DJ",
-          "Schornsteinfeger"
+          "Schornsteinfeger",
+          "Zauberer",
+          "Zahnarzt",
+          "Landwirt",
+          "Klempner",
+          "Richter",
+          "Bademeister",
+          "Friseur"
         ]
       }
     },
@@ -478,6 +514,20 @@
         "Weich",
         "Rau"
       ]
+    ],
+    "rather": [
+      "Immer 10 Minuten zu spät kommen|Immer 20 Minuten zu früh kommen",
+      "Dein Handy verlieren|Dein Portemonnaie verlieren",
+      "Für immer nur Pizza essen|Nie wieder Pizza essen",
+      "Fliegen können|Unsichtbar sein",
+      "Einen Monat kein Internet|Ein Jahr keine Musik",
+      "Immer sagen, was du denkst|Nie wieder sprechen",
+      "In der Vergangenheit leben|In der Zukunft leben",
+      "Berühmt sein|Reich sein",
+      "Gegen eine pferdegroße Ente kämpfen|Gegen 100 entengroße Pferde kämpfen",
+      "Nie wieder duschen|Nie wieder Zähne putzen",
+      "Wissen, wie du stirbst|Wissen, wann du stirbst",
+      "Eine Pause-Taste haben|Eine Zurückspul-Taste haben"
     ]
   },
   "onlineTitle": "Online spielen",
@@ -637,5 +687,48 @@
   "bx.you": "Du bist dran! Tippe auf eine Linie.",
   "bx.win": "{name} gewinnt!",
   "bx.tie": "Unentschieden!",
-  "appSub": "Party-Spiele"
+  "appSub": "Party-Spiele",
+  "pw.show": "Zeigen",
+  "pw.hide": "Verbergen",
+  "voice.label": "Stimme",
+  "voice.again": "Vorlesen",
+  "wolf.select": "Zum Auswählen tippen",
+  "wolf.deadRole": "Niemand mit dieser Rolle lebt noch. Tut trotzdem so, damit es niemand merkt, und macht weiter.",
+  "wolf.victim": "Die Wölfe haben {name} gewählt.",
+  "wolf.noVictim": "Die Wölfe haben niemanden gewählt.",
+  "wolf.noShot": "Jäger schießt auf niemanden",
+  "wolf.out": "Wer scheidet aus?",
+  "wolf.eliminate": "Ausscheiden",
+  "wolf.tieBtn": "Gleichstand / niemand",
+  "wolf.board": "Spieler",
+  "nar.night": "Die Nacht bricht an. Alle schließen die Augen.",
+  "nar.cupid": "Amor, öffne die Augen und wähle zwei Verliebte. Dann schlaf wieder ein.",
+  "nar.guardian": "Beschützer, öffne die Augen und wähle jemanden zum Beschützen. Dann schlaf wieder ein.",
+  "nar.wolves": "Werwölfe, öffnet die Augen und wählt ein Opfer. Dann schlaft wieder ein.",
+  "nar.seer": "Seherin, öffne die Augen und zeige auf jemanden. Dann schlaf wieder ein.",
+  "nar.witch": "Hexe, öffne die Augen. Möchtest du einen Trank einsetzen? Dann schlaf wieder ein.",
+  "nar.dawn": "Das Dorf erwacht.",
+  "nar.noDeaths": "Diese Nacht ist niemand gestorben.",
+  "nar.died": "Letzte Nacht gestorben: {names}.",
+  "nar.hunter": "Der Jäger wurde getötet und nimmt jemanden mit. Wähle jetzt.",
+  "nar.vote": "Diskutiert und stimmt ab. Wer soll ausscheiden?",
+  "nar.tie": "Gleichstand. Niemand scheidet aus.",
+  "nar.elim": "{name} scheidet aus und war {role}.",
+  "nar.idiot": "{name} ist der Dorftrottel und überlebt, darf aber nicht mehr abstimmen.",
+  "wq.or": "oder",
+  "wq.rulesAB": "Alle entscheiden: A oder B. Zählt die Hände und diskutiert, warum.",
+  "imp.who": "Wer ist der Impostor?",
+  "imp.whoHint": "Besprecht es und wählt dann den Spieler, den die Gruppe am meisten verdächtigt.",
+  "imp.suggest": "Vorschlag: Stellt noch jedem eine Frage zum Wort, bevor ihr euch entscheidet.",
+  "imp.accuse": "Beschuldigen",
+  "imp.caught": "Erwischt! Die Gruppe hat den Impostor gefunden.",
+  "imp.missed": "Falsch! Der Impostor ist entkommen.",
+  "imp.skipVote": "Überspringen, direkt auflösen",
+  "imp.accused": "Die Gruppe beschuldigt: {name}",
+  "pass.swipe": "Zum Aufdecken nach oben wischen",
+  "pass.orTap": "oder tippen",
+  "bomb.motion": "Freihändig",
+  "bomb.motionHint": "Gib das Handy einfach weiter. Ein kurzer Ruck gibt die Bombe weiter, kein Tippen nötig.",
+  "bomb.motionPass": "Gib das Handy an die nächste Person.",
+  "bomb.motionDenied": "Bewegungszugriff wurde abgelehnt."
 }

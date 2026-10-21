@@ -201,7 +201,13 @@
           "Lasagnes",
           "Pop-corn",
           "Cheesecake",
-          "Céréales"
+          "Céréales",
+          "Crêpes",
+          "Burrito",
+          "Soupe",
+          "Falafel",
+          "Croissant",
+          "Ramen"
         ]
       },
       "animals": {
@@ -221,7 +227,13 @@
           "Hibou",
           "Flamant rose",
           "Hippocampe",
-          "Raton laveur"
+          "Raton laveur",
+          "Pieuvre",
+          "Panda",
+          "Chameau",
+          "Chauve-souris",
+          "Tortue",
+          "Loup"
         ]
       },
       "places": {
@@ -241,7 +253,15 @@
           "Bowling",
           "Chalet de ski",
           "Salon de coiffure",
-          "Kebab"
+          "Kebab",
+          "Cirque",
+          "Phare",
+          "Casino",
+          "Sauna",
+          "Château",
+          "Plage",
+          "Ferme",
+          "Salle de sport"
         ]
       },
       "things": {
@@ -261,7 +281,16 @@
           "Arrosoir",
           "Trampoline",
           "Sac de couchage",
-          "Grille-pain"
+          "Grille-pain",
+          "Miroir",
+          "Bougie",
+          "Ciseaux",
+          "Boussole",
+          "Échelle",
+          "Couverture",
+          "Appareil photo",
+          "Lampe",
+          "Clé"
         ]
       },
       "jobs": {
@@ -281,7 +310,13 @@
           "Jardinier",
           "Vétérinaire",
           "DJ",
-          "Ramoneur"
+          "Ramoneur",
+          "Magicien",
+          "Agriculteur",
+          "Plombier",
+          "Juge",
+          "Maître-nageur",
+          "Coiffeur"
         ]
       }
     },
@@ -478,6 +513,20 @@
         "Doux",
         "Rugueux"
       ]
+    ],
+    "rather": [
+      "Toujours arriver 10 minutes en retard|Toujours arriver 20 minutes en avance",
+      "Perdre ton téléphone|Perdre ton portefeuille",
+      "Ne manger que des pizzas|Ne plus jamais manger de pizza",
+      "Savoir voler|Être invisible",
+      "Un mois sans internet|Un an sans musique",
+      "Toujours dire ce que tu penses|Ne plus jamais parler",
+      "Vivre dans le passé|Vivre dans le futur",
+      "Être célèbre|Être riche",
+      "Combattre un canard de la taille d'un cheval|Combattre 100 chevaux de la taille d'un canard",
+      "Ne plus jamais prendre de douche|Ne plus jamais te brosser les dents",
+      "Savoir comment tu meurs|Savoir quand tu meurs",
+      "Avoir un bouton pause|Avoir un bouton retour en arrière"
     ]
   },
   "onlineTitle": "Jouer en ligne",
@@ -637,5 +686,48 @@
   "bx.you": "À toi ! Touche un trait.",
   "bx.win": "{name} gagne !",
   "bx.tie": "Égalité !",
-  "appSub": "Jeux de soirée"
+  "appSub": "Jeux de soirée",
+  "pw.show": "Afficher",
+  "pw.hide": "Masquer",
+  "voice.label": "Voix",
+  "voice.again": "Lire",
+  "wolf.select": "Touchez pour choisir",
+  "wolf.deadRole": "Plus personne n'a ce rôle. Faites semblant quand même, puis continuez.",
+  "wolf.victim": "Les loups ont choisi {name}.",
+  "wolf.noVictim": "Les loups n'ont choisi personne.",
+  "wolf.noShot": "Le chasseur ne tire sur personne",
+  "wolf.out": "Qui est éliminé ?",
+  "wolf.eliminate": "Éliminer",
+  "wolf.tieBtn": "Égalité / personne",
+  "wolf.board": "Joueurs",
+  "nar.night": "La nuit tombe. Tout le monde ferme les yeux.",
+  "nar.cupid": "Cupidon, ouvre les yeux et désigne deux amoureux. Puis rendors-toi.",
+  "nar.guardian": "Garde, ouvre les yeux et choisis qui protéger. Puis rendors-toi.",
+  "nar.wolves": "Loups-garous, ouvrez les yeux et choisissez une victime. Puis rendormez-vous.",
+  "nar.seer": "Voyante, ouvre les yeux et désigne quelqu'un. Puis rendors-toi.",
+  "nar.witch": "Sorcière, ouvre les yeux. Veux-tu utiliser une potion ? Puis rendors-toi.",
+  "nar.dawn": "Le village se réveille.",
+  "nar.noDeaths": "Personne n'est mort cette nuit.",
+  "nar.died": "Morts cette nuit : {names}.",
+  "nar.hunter": "Le chasseur est mort et emporte quelqu'un. Choisis maintenant.",
+  "nar.vote": "Discutez et votez. Qui doit être éliminé ?",
+  "nar.tie": "Égalité. Personne n'est éliminé.",
+  "nar.elim": "{name} est éliminé et était {role}.",
+  "nar.idiot": "{name} est l'idiot du village et survit, mais ne peut plus voter.",
+  "wq.or": "ou",
+  "wq.rulesAB": "Chacun choisit : A ou B. Comptez les mains et discutez pourquoi.",
+  "imp.who": "Qui est l'imposteur ?",
+  "imp.whoHint": "Discutez, puis choisissez le joueur que le groupe soupçonne le plus.",
+  "imp.suggest": "Suggestion : posez encore une question à chacun sur le mot avant de décider.",
+  "imp.accuse": "Accuser",
+  "imp.caught": "Démasqué ! Le groupe a trouvé l'imposteur.",
+  "imp.missed": "Raté ! L'imposteur s'est échappé.",
+  "imp.skipVote": "Passer, révéler directement",
+  "imp.accused": "Le groupe accuse : {name}",
+  "pass.swipe": "Glisse vers le haut pour révéler",
+  "pass.orTap": "ou touche",
+  "bomb.motion": "Mains libres",
+  "bomb.motionHint": "Passez simplement le téléphone. Une secousse passe la bombe, sans toucher l'écran.",
+  "bomb.motionPass": "Passez le téléphone au joueur suivant.",
+  "bomb.motionDenied": "L'accès aux capteurs de mouvement a été refusé."
 }

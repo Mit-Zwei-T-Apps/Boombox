@@ -201,7 +201,13 @@
           "Lasagne",
           "Popcorn",
           "Cheesecake",
-          "Cereal"
+          "Cereal",
+          "Lasagna",
+          "Burrito",
+          "Soup",
+          "Falafel",
+          "Croissant",
+          "Ramen"
         ]
       },
       "animals": {
@@ -221,7 +227,13 @@
           "Owl",
           "Flamingo",
           "Seahorse",
-          "Raccoon"
+          "Raccoon",
+          "Octopus",
+          "Panda",
+          "Camel",
+          "Bat",
+          "Turtle",
+          "Wolf"
         ]
       },
       "places": {
@@ -241,7 +253,15 @@
           "Bowling alley",
           "Ski lodge",
           "Hair salon",
-          "Kebab shop"
+          "Kebab shop",
+          "Circus",
+          "Lighthouse",
+          "Casino",
+          "Sauna",
+          "Castle",
+          "Beach",
+          "Farm",
+          "Gym"
         ]
       },
       "things": {
@@ -261,7 +281,16 @@
           "Watering can",
           "Trampoline",
           "Sleeping bag",
-          "Toaster"
+          "Toaster",
+          "Mirror",
+          "Candle",
+          "Scissors",
+          "Compass",
+          "Ladder",
+          "Blanket",
+          "Camera",
+          "Lamp",
+          "Key"
         ]
       },
       "jobs": {
@@ -281,7 +310,13 @@
           "Gardener",
           "Vet",
           "DJ",
-          "Chimney sweep"
+          "Chimney sweep",
+          "Magician",
+          "Farmer",
+          "Plumber",
+          "Judge",
+          "Lifeguard",
+          "Barber"
         ]
       }
     },
@@ -478,6 +513,20 @@
         "Soft",
         "Rough"
       ]
+    ],
+    "rather": [
+      "Always be 10 minutes late|Always be 20 minutes early",
+      "Lose your phone|Lose your wallet",
+      "Only eat pizza forever|Never eat pizza again",
+      "Be able to fly|Be invisible",
+      "Have no internet for a month|Have no music for a year",
+      "Always speak your mind|Never speak again",
+      "Live in the past|Live in the future",
+      "Be famous|Be rich",
+      "Fight one horse-sized duck|Fight 100 duck-sized horses",
+      "Never shower again|Never brush your teeth again",
+      "Know how you die|Know when you die",
+      "Have a pause button|Have a rewind button"
     ]
   },
   "onlineTitle": "Play online",
@@ -637,5 +686,48 @@
   "bx.you": "Your turn! Tap a line.",
   "bx.win": "{name} wins!",
   "bx.tie": "It's a tie!",
-  "appSub": "Party Games"
+  "appSub": "Party Games",
+  "pw.show": "Show",
+  "pw.hide": "Hide",
+  "voice.label": "Voice",
+  "voice.again": "Read aloud",
+  "wolf.select": "Tap to select",
+  "wolf.deadRole": "Nobody with this role is alive. Pretend anyway so nobody can tell, then continue.",
+  "wolf.victim": "The wolves chose {name}.",
+  "wolf.noVictim": "The wolves chose nobody.",
+  "wolf.noShot": "Hunter shoots nobody",
+  "wolf.out": "Who is eliminated?",
+  "wolf.eliminate": "Eliminate",
+  "wolf.tieBtn": "Tie / nobody",
+  "wolf.board": "Players",
+  "nar.night": "Night falls. Everyone close your eyes.",
+  "nar.cupid": "Cupid, open your eyes and choose two lovers. Then go back to sleep.",
+  "nar.guardian": "Guardian, open your eyes and choose someone to protect. Then go back to sleep.",
+  "nar.wolves": "Werewolves, open your eyes and choose a victim. Then go back to sleep.",
+  "nar.seer": "Seer, open your eyes and point at someone to look at. Then go back to sleep.",
+  "nar.witch": "Witch, open your eyes. Do you want to use a potion? Then go back to sleep.",
+  "nar.dawn": "The village wakes up.",
+  "nar.noDeaths": "Nobody died tonight.",
+  "nar.died": "Last night died: {names}.",
+  "nar.hunter": "The hunter was killed and takes someone with them. Choose now.",
+  "nar.vote": "Discuss and vote. Who should be eliminated?",
+  "nar.tie": "Tie. Nobody is eliminated.",
+  "nar.elim": "{name} is eliminated and was {role}.",
+  "nar.idiot": "{name} is the village idiot and survives, but can no longer vote.",
+  "wq.or": "or",
+  "wq.rulesAB": "Everybody decides: A or B. Count hands and discuss why.",
+  "imp.who": "Who is the impostor?",
+  "imp.whoHint": "Talk it over, then pick the player the group suspects most.",
+  "imp.suggest": "Suggestion: ask everyone one more question about the word before you decide.",
+  "imp.accuse": "Accuse",
+  "imp.caught": "Caught! The group found the impostor.",
+  "imp.missed": "Wrong! The impostor got away.",
+  "imp.skipVote": "Skip, just reveal",
+  "imp.accused": "The group accused: {name}",
+  "pass.swipe": "Swipe up to reveal",
+  "pass.orTap": "or tap",
+  "bomb.motion": "Hands-free",
+  "bomb.motionHint": "Just hand the phone on. A quick jolt passes the bomb, no tapping.",
+  "bomb.motionPass": "Hand the phone to the next player.",
+  "bomb.motionDenied": "Motion access was denied."
 }
