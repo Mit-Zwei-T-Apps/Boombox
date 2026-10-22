@@ -6,29 +6,25 @@ Pass the phone around, look at your card, cover it, hand it on. Everything runs 
 
 **Games**
 
-- **Impostor:** everyone knows the secret word except the impostor(s), who can get a small tip (topic and first letter, switchable). Before the reveal the group picks who they suspect.
+- **Impostor:** everyone knows the secret word except the impostor(s).
 - **Spy:** everyone is at the same place except the spy.
-- **Werewolf:** a moderator screen keeps track for you. Tap who is chosen, deaths, lovers, potions and wins are tracked automatically, and a voice reads the narration aloud (browser speech, toggle in the game). Roles: werewolf, seer, witch, hunter, Cupid, guardian, little girl, village idiot, elder, villager. Optional separate narrator.
-- **Who would rather:** 30 questions, everyone points at the same time. Every third card is an A-or-B choice.
-- **Bomb:** name something for the topic and pass the phone before it explodes. Optional hands-free mode: a quick jolt of the phone passes the bomb, no tapping (needs a motion sensor).
+- **Werewolf:** with an on-screen narrator. Roles: werewolf, seer, witch, hunter, Cupid, guardian, little girl, village idiot, elder, villager. Optional separate narrator.
+- **Who would rather:** 30 questions, everyone points at the same time.
+- **Bomb:** name something for the topic and pass the phone before it explodes.
 - **Never have I ever**, **Truth or dare**, **Who am I?** (one phone).
-- **2 Player Duels:** tug of war, quick draw, tic-tac-toe and rock paper scissors on one phone, players sit opposite each other.
-- **4 Player Games:** tap race and "last one calm" for up to four players around one phone (2x2 grid, top row mirrored).
 - **Dots and boxes** (Käsekästchen): 2 to 4 players, one phone or online.
 - **Sketch it:** one player draws, the others guess (online only).
 - **Spectrum:** one player knows a hidden spot between two opposites and gives a hint, the others place it (online only).
 
 **Online play**
 
-Choose *Play online*, create a room, and share the 4-letter code. Everybody uses their own phone. Online: Impostor, Spy, Werewolf (secret roles on each phone, automatic narrator; the host's phone reads it aloud), Who would rather, Bomb, Dots and boxes, Spectrum and Sketch it. The host can share an invite link (`/?room=ABCD`). Names and rooms need no account. The host picks the game; words and questions use the host's language. Rooms are kept in memory and disappear when idle. Limit with `MAX_ROOMS` (default 200).
+Choose *Play online*, create a room, and share the 4-letter code. Everybody uses their own phone. Online: Impostor, Spy, Werewolf (secret roles on each phone, automatic narrator), Who would rather, Bomb, Dots and boxes, Spectrum and Sketch it. The host can share an invite link (`/?room=ABCD`). Names and rooms need no account. The host picks the game; words and questions use the host's language. Rooms are kept in memory and disappear when idle. Limit with `MAX_ROOMS` (default 200).
 
 **Features**
 
 - 3 to 20 players, names are saved in the browser.
-- Languages: English (default), Deutsch, Nederlands, Français, Español. Easy to add more. The nl, fr and es texts are self-made and should be reviewed by native speakers.
+- Languages: English (default) and Deutsch. Anything else falls back to English. Easy to add more (see below).
 - Optional accounts: sign in to keep your player names and language on the server and use them on other devices. Guests lose nothing.
-- Role cards are revealed by swiping up (tap works too).
-- Show/hide button on password fields.
 - No dependencies. Needs only Node.js 18 or newer.
 - No external requests: no fonts, CDNs or trackers.
 
@@ -99,8 +95,6 @@ server {
 }
 ```
 
-Randomness: shuffles and picks use the system's cryptographic random generator. Impostor words and Spy places are not repeated for a while in the same browser.
-
 ## Own content and app install
 
 - The admin can add own words, questions, "never have I ever" lines, truths, dares and bomb topics under *Account → Admin → Own content*. They are stored in `data/custom.json` and added to the built-in lists in every language.
@@ -161,3 +155,10 @@ scripts/smoke-test.js  end-to-end test of the server
 Created by Matteo Mit Zwei T, with Claude.
 
 Boombox is a home-made project and is not affiliated with the app Splash.
+
+
+## Solo, Bots & Schwierigkeit
+- Schach: gegen Bot (3 Stufen) oder zu zweit an einem Handy, mit Rochade, en passant und Umwandlung.
+- Solo-Spiele: Wordle (Wortraten), Memory, Reaktionstest.
+- 2-Spieler-Duelle, 4-Spieler-Modi und Dots & Boxes lassen sich allein gegen Bots spielen; Schwierigkeit: leicht/mittel/schwer.
+- Rollen-Karten: nach oben wischen zum Aufdecken, nach unten wischen zum Verdecken (wie bei Splash).

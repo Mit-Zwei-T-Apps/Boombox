@@ -231,6 +231,31 @@ async function testSketch() {
   console.log('  sketch ok');
 }
 
+async function testChain() {
+  const bots = await room(3);
+  const [host] = bots;
+  const r = await host.act('start', { game: 'chain' });
+  assert.strictEqual(r.status, 200, 'chain starts');
+  await Promise.all(bots.map((b) => b.until((x) => x.g && x.g.type === 'chain' && x.g.step === 1)));
+  assert.strictEqual(host.g.kind, 'text');
+  for (const [i, b] of bots.entries()) await b.act('text', { text: 'sentence ' + i });
+  // step 2: draw what the neighbour wrote
+  await Promise.all(bots.map((b) => b.until((x) => x.g.step === 2 && x.g.kind === 'draw' && x.g.prev && x.g.prev.kind === 'text')));
+  const seen = bots.map((b) => b.g.prev.text).sort();
+  assert.deepStrictEqual(seen, ['sentence 0', 'sentence 1', 'sentence 2'], 'each player gets another player\'s sentence');
+  for (const b of bots) { await b.act('stroke', { s: { c: '#ff0000', w: 8, p: [[10, 10], [200, 220]] } }); await b.act('done'); }
+  // step 3: describe the drawing
+  await Promise.all(bots.map((b) => b.until((x) => x.g.step === 3 && x.g.kind === 'text' && x.g.prev && x.g.prev.kind === 'draw' && x.g.prev.strokes.length === 1)));
+  for (const b of bots) await b.act('text', { text: 'a red line' });
+  await host.until((h) => h.g.phase === 'reveal', 4000);
+  assert.strictEqual(host.g.entries.length, 1, 'reveal starts with the first entry');
+  for (let k = 0; k < 9; k++) { await host.act('next'); }
+  await host.until((h) => h.g.phase === 'end');
+  assert.strictEqual(host.g.entries.length, 3, 'whole last chain shown');
+  stopAll(bots);
+  console.log('  chain ok');
+}
+
 async function testWolf(roleOpts, n) {
   const bots = await room(n);
   const [host] = bots;
@@ -280,6 +305,7 @@ async function main() {
   await testWouldRather();
   await testBomb();
   await testSketch();
+  await testChain();
   await testSpectrum();
   await testBoxes();
   await testWolf({ seer: true, witch: true, hunter: true }, 7);

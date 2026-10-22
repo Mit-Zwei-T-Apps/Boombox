@@ -72,5 +72,47 @@
     void i;
     return out.join('');
   }
-  return { COLORS: COLORS, create: create, move: move, winners: winners, svg: svg };
+
+  // ---- computer player: level 'easy' | 'medium' | 'hard' ----
+  function freeEdges(s) {
+    var n = s.n, out = [], r, c;
+    for (r = 0; r <= n; r++) for (c = 0; c < n; c++) if (s.h[r * n + c] < 0) out.push('h:' + r + ':' + c);
+    for (r = 0; r < n; r++) for (c = 0; c <= n; c++) if (s.v[r * (n + 1) + c] < 0) out.push('v:' + r + ':' + c);
+    return out;
+  }
+  function sides(s, r, c) {
+    var n = s.n;
+    return (s.h[r * n + c] >= 0 ? 1 : 0) + (s.h[(r + 1) * n + c] >= 0 ? 1 : 0) + (s.v[r * (n + 1) + c] >= 0 ? 1 : 0) + (s.v[r * (n + 1) + c + 1] >= 0 ? 1 : 0);
+  }
+  // how many boxes this edge completes and how many it turns into 3-sided boxes (a gift for the opponent)
+  function judge(s, key) {
+    var e = parse(s, key), n = s.n, take = 0, give = 0;
+    var cand = e.k === 'h' ? [[e.r - 1, e.c], [e.r, e.c]] : [[e.r, e.c - 1], [e.r, e.c]];
+    cand.forEach(function (b) {
+      if (b[0] < 0 || b[1] < 0 || b[0] >= n || b[1] >= n || s.box[b[0] * n + b[1]] >= 0) return;
+      var k = sides(s, b[0], b[1]);
+      if (k === 3) take++; else if (k === 2) give++;
+    });
+    return { take: take, give: give };
+  }
+  function pickRand(a, rnd) { return a[Math.floor(rnd() * a.length)]; }
+  function bestMove(s, level, rnd) {
+    rnd = rnd || Math.random;
+    var f = freeEdges(s); if (!f.length) return null;
+    var j = f.map(function (k) { return { k: k, j: judge(s, k) }; });
+    var takes = j.filter(function (x) { return x.j.take > 0; });
+    if (level === 'easy') { if (takes.length && rnd() < 0.5) return pickRand(takes, rnd).k; return pickRand(f, rnd); }
+    if (takes.length) {
+      if (level === 'hard') { // grab boxes, but prefer a move that takes more and doesn't open another one
+        takes.sort(function (a, b) { return (b.j.take - b.j.give) - (a.j.take - a.j.give); });
+        return takes[0].k;
+      }
+      return pickRand(takes, rnd).k;
+    }
+    var safe = j.filter(function (x) { return x.j.give === 0; });
+    if (safe.length) return pickRand(safe, rnd).k;
+    var least = Math.min.apply(null, j.map(function (x) { return x.j.give; }));
+    return pickRand(j.filter(function (x) { return x.j.give === least; }), rnd).k;
+  }
+  return { COLORS: COLORS, create: create, move: move, winners: winners, svg: svg, bestMove: bestMove };
 }));

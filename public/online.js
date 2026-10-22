@@ -6,8 +6,8 @@ var KEY_ROOM = 'boombox.room', KEY_NAME = 'boombox.name';
 var O = S.on;
 O.chat = []; O.sel = []; O.off = 0; O.tool = { c: '#111111', w: 6 }; O.R = null;
 var COLORS = ['#111111', '#e63946', '#f4a300', '#2a9d4a', '#1d6fe0', '#8e44ad', '#ffffff'];
-var ONLINE_GAMES = ['impostor', 'spy', 'wolf', 'wouldrather', 'bomb', 'spectrum', 'boxes', 'sketch'];
-var SERVER_GAME = { impostor: 'impostor', spy: 'spy', wolf: 'wolf', wouldrather: 'wouldrather', bomb: 'bomb', spectrum: 'spectrum', boxes: 'boxes', sketch: 'sketch' };
+var ONLINE_GAMES = ['impostor', 'spy', 'wolf', 'wouldrather', 'bomb', 'spectrum', 'boxes', 'sketch', 'chain'];
+var SERVER_GAME = { impostor: 'impostor', spy: 'spy', wolf: 'wolf', wouldrather: 'wouldrather', bomb: 'bomb', spectrum: 'spectrum', boxes: 'boxes', sketch: 'sketch', chain: 'chain' };
 
 function store(v) { try { if (v) localStorage.setItem(KEY_ROOM, JSON.stringify(v)); else localStorage.removeItem(KEY_ROOM); } catch (e) { /* ignore */ } }
 function saved() { try { return JSON.parse(localStorage.getItem(KEY_ROOM) || 'null'); } catch (e) { return null; } }
@@ -69,6 +69,7 @@ function onMessage(m) {
     var g = m.game, key = g ? g.type + ':' + (g.turn || g.round || g.n || '') + ':' + (g.night || '') : '';
     if (key !== O.lastKey) { O.sel = []; if (g && g.type === 'sketch') clearCanvas(); if (!g || g.type !== 'sketch') O.chat = []; }
     if (g && g.type === 'sketch' && O.lastPhase !== 'draw' && g.phase === 'draw') { clearCanvas(); O.chat = []; }
+    if (g && g.type === 'chain') { var ck = g.phase + ':' + (g.step || ''); if (O.chainKey !== ck) { O.chainKey = ck; clearCanvas(); } } else O.chainKey = null;
     O.lastKey = key; O.lastPhase = g ? g.phase : null;
     var prevAct = O.R && O.R.game && O.R.game.act ? O.R.game.act.kind : null, nextAct = g && g.act ? g.act.kind : null;
     if (prevAct !== nextAct) O.sel = [];
@@ -108,9 +109,14 @@ function clearCanvas() {
   if (!O.cv) return;
   var c = O.cv.getContext('2d'); c.fillStyle = '#ffffff'; c.fillRect(0, 0, 1000, 750);
 }
-function drawStroke(s) {
-  if (!s || !O.cv) return;
-  var c = O.cv.getContext('2d'); c.strokeStyle = s.c; c.fillStyle = s.c; c.lineWidth = s.w; c.lineCap = 'round'; c.lineJoin = 'round';
+function drawStroke(s) { drawStrokeOn(O.cv, s); }
+function paintStrokes(cv, list) {
+  var c = cv.getContext('2d'); c.fillStyle = '#ffffff'; c.fillRect(0, 0, 1000, 750);
+  (list || []).forEach(function (s) { drawStrokeOn(cv, s); });
+}
+function drawStrokeOn(cv, s) {
+  if (!s || !cv) return;
+  var c = cv.getContext('2d'); c.strokeStyle = s.c; c.fillStyle = s.c; c.lineWidth = s.w; c.lineCap = 'round'; c.lineJoin = 'round';
   var p = s.p;
   if (p.length === 1) { c.beginPath(); c.arc(p[0][0], p[0][1], s.w / 2, 0, Math.PI * 2); c.fill(); return; }
   c.beginPath(); c.moveTo(p[0][0], p[0][1]);
@@ -254,7 +260,7 @@ F.oguess = function (f) {
 function lobby() {
   var R = O.R, host = isHost(), pick = O.pick && ONLINE_GAMES.indexOf(O.pick) !== -1 ? O.pick : 'impostor';
   O.pick = pick;
-  var mins = { impostor: 3, spy: 3, wolf: 5, wouldrather: 2, bomb: 2, spectrum: 3, boxes: 2, sketch: 2 };
+  var mins = { impostor: 3, spy: 3, wolf: 5, wouldrather: 2, bomb: 2, spectrum: 3, boxes: 2, sketch: 2, chain: 3 };
   var html = '<header><p class="kicker">' + T('on.lobby', { code: '' }).trim() + '</p><h1 class="wordmark" style="font-size:clamp(56px,20vw,96px);letter-spacing:.08em">' + esc(R.code) + '</h1></header>' +
     '<p class="hint">' + T('on.share') + '</p>' +
     '<div class="row"><button class="btn alt small" data-act="ocopy">' + T('on.copy') + '</button><button class="btn alt small" data-act="olink">' + T('on.shareLink') + '</button></div>' +
@@ -364,6 +370,39 @@ function sketch(v) {
     '<div id="chat" class="chat"></div><div class="panel"><div class="label">' + T('sk.scores') + '</div>' + scoreList(v.scores, v.players) + '</div>' +
     (isHost() && v.phase === 'draw' ? '<button class="btn alt small" data-act="oact" data-a="skip">' + T('ww.skipPhase') + '</button>' : '') + '</div>';
 }
+function toolsHtml() {
+  return '<div class="panel"><div class="chips">' + COLORS.map(function (c) {
+    return '<button class="chip' + (O.tool.c === c ? ' on' : '') + '" data-act="otool" data-a="' + c + '" aria-label="' + c + '" style="background:' + c + ';border:3px solid ' + (O.tool.c === c ? '#FFD84A' : '#04141C') + ';width:36px;height:36px;padding:0"></button>';
+  }).join('') + '</div><div class="chips">' + [4, 10, 22].map(function (w) { return '<button class="chip' + (O.tool.w === w ? ' on' : '') + '" data-act="otool" data-b="' + w + '">' + w + '</button>'; }).join('') +
+    '<button class="chip" data-act="oclear">' + T('sk.clear') + '</button></div></div>';
+}
+function chain(v) {
+  O.canDraw = false;
+  if (v.phase === 'step') {
+    if (!v.inGame) return '<div class="panel"><p class="hint">' + T('on.spectator') + '</p></div>';
+    var head = '<div class="panel"><div class="label">' + T('ch.step', { n: v.step, m: v.n }) + '</div><div class="clock" id="clock" data-end="' + v.endsAt + '" style="font-size:36px">--</div></div>';
+    var prog = '<p class="hint">' + T('on.voted', { n: v.done.length, m: v.n }) + '</p>';
+    var skip = isHost() ? '<button class="btn alt small" data-act="oact" data-a="skip">' + T('ww.skipPhase') + '</button>' : '';
+    if (v.kind === 'text') {
+      var intro = v.prev ? '<div class="label">' + T('ch.describe') + '</div><canvas class="cv cvs" id="cprev" width="1000" height="750"></canvas>' : '<h2 class="q">' + T('ch.write') + '</h2>' + (v.idea ? '<p class="hint">' + T('ch.idea', { idea: v.idea }) + '</p>' : '');
+      var form = v.mine ? '<div class="ok">' + T('ch.sent') + '</div>' : '<form class="add" data-form="otext" autocomplete="off"><input id="ctext" name="ctext" type="text" maxlength="80" placeholder="' + T('ch.placeholder') + '" aria-label="' + T('ch.placeholder') + '"><button class="btn" type="submit">' + T('ch.send') + '</button></form>';
+      return '<div class="stage" style="text-align:left">' + head + '<div class="panel">' + intro + '</div>' + form + prog + skip + '</div>';
+    }
+    O.canDraw = !v.mine;
+    return '<div class="stage" style="text-align:left">' + head + '<div class="panel"><div class="label">' + T('ch.drawThis') + '</div><h2 class="q">' + esc(v.prev ? v.prev.text : '') + '</h2></div>' +
+      '<div id="cvhost" class="cvhost"></div>' + (v.mine ? '<div class="ok">' + T('ch.sent') + '</div>' : toolsHtml() + '<button class="btn" data-act="oact" data-a="done">' + T('ch.done') + '</button>') + prog + skip + '</div>';
+  }
+  var items = v.entries.map(function (e, i) {
+    return '<div class="panel"><p class="kicker">' + T(e.kind === 'text' ? 'ch.wroteBy' : 'ch.drewBy', { name: pn(e.by) }) + '</p>' +
+      (e.kind === 'text' ? '<p class="q">' + (e.text ? esc(e.text) : '…') + '</p>' : '<canvas class="cv cvs" data-i="' + i + '" width="1000" height="750"></canvas>') + '</div>';
+  }).join('');
+  var foot = v.phase === 'end' ? '<h2 class="q">' + T('ch.finished') + '</h2>' + hostBtns('again') : (isHost() ? '<button class="btn" data-act="oact" data-a="next">' + T('ch.next') + '</button>' : '<p class="hint">' + T('on.waitHost') + '</p>');
+  return '<div class="stage" style="text-align:left"><h2 class="q">' + T('ch.chainOf', { name: pn(v.owner) }) + '</h2>' + items + foot + '</div>';
+}
+F.otext = function (f) {
+  var el = f.elements.ctext, v = el.value.trim(); if (!v) return;
+  post('text', { text: v });
+};
 function paintChat() {
   var el = document.getElementById('chat'); if (!el) return;
   el.innerHTML = O.chat.slice(-8).map(function (m) {
@@ -483,7 +522,7 @@ V.room = function () {
   if (!R.game) body = lobby();
   else {
     var v = R.game, top = '<div class="top"><span class="tag">' + esc(R.code) + '</span><div class="t">' + T('g.' + v.type) + '</div></div>';
-    var inner = v.type === 'impostor' || v.type === 'spy' ? hidden(v) : v.type === 'wouldrather' ? wouldRather(v) : v.type === 'bomb' ? bomb(v) : v.type === 'sketch' ? sketch(v) : v.type === 'spectrum' ? spectrum(v) : v.type === 'boxes' ? boxes(v) : wolf(v);
+    var inner = v.type === 'impostor' || v.type === 'spy' ? hidden(v) : v.type === 'wouldrather' ? wouldRather(v) : v.type === 'bomb' ? bomb(v) : v.type === 'sketch' ? sketch(v) : v.type === 'spectrum' ? spectrum(v) : v.type === 'boxes' ? boxes(v) : v.type === 'chain' ? chain(v) : wolf(v);
     body = top + inner + leaveBtn();
   }
   // keep a half-typed guess and focus across re-renders, re-attach the persistent canvas, start clocks
@@ -494,6 +533,19 @@ V.room = function () {
       var cv = canvas(); host.appendChild(cv); cv.style.touchAction = 'none';
       cv.style.cursor = O.canDraw ? 'crosshair' : 'default';
       paintChat();
+    }
+    var gm = O.R && O.R.game;
+    if (gm && gm.type === 'chain') {
+      var pv = document.getElementById('cprev'); if (pv && gm.prev) paintStrokes(pv, gm.prev.strokes);
+      Array.prototype.forEach.call(document.querySelectorAll('canvas.cvs[data-i]'), function (c) { var e = gm.entries[+c.getAttribute('data-i')]; if (e) paintStrokes(c, e.strokes); });
+      if (gm.phase === 'step' && gm.inGame && !gm.mine && O.autoKey !== gm.step) {
+        O.autoKey = gm.step; clearTimeout(O.autoT);
+        var stp = gm.step, kd = gm.kind;
+        O.autoT = setTimeout(function () {
+          var cur = O.R && O.R.game; if (!cur || cur.type !== 'chain' || cur.step !== stp || cur.mine) return;
+          if (kd === 'draw') post('done'); else { var inp = document.getElementById('ctext'); if (inp && inp.value.trim()) post('text', { text: inp.value.trim() }); }
+        }, Math.max(0, gm.endsAt - now()) + 200);
+      }
     }
     var sl = document.getElementById('slider');
     if (sl) sl.addEventListener('input', function () { O.sv = +sl.value; });

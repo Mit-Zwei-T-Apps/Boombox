@@ -11,10 +11,14 @@ var GAMES = {
   never: { min: 2, max: 20, cls: 'c-never', stat: 'never' },
   truth: { min: 2, max: 20, cls: 'c-truth', stat: 'truth' },
   whoami: { min: 2, max: 20, cls: 'c-whoami', stat: 'whoami' },
-  boxes: { min: 2, max: 4, cls: 'c-boxes', stat: 'boxes' },
-  duel: { min: 2, max: 2, cls: 'c-duel', stat: 'duel' },
-  quad: { min: 2, max: 4, cls: 'c-quad', stat: 'duel' }
+  boxes: { min: 1, max: 4, cls: 'c-boxes', stat: 'boxes' },
+  duel: { min: 1, max: 2, cls: 'c-duel', stat: 'duel', meta: 'duel.meta' },
+  quad: { min: 1, max: 4, cls: 'c-quad', stat: 'duel' },
+  hangman: { min: 1, max: 20, cls: 'c-hangman', stat: 'hangman' },
+  chess: { min: 1, max: 2, cls: 'c-chess', stat: 'chess', meta: 'duel.meta' },
+  solo: { min: 1, max: 1, cls: 'c-solo', stat: 'solo', meta: 'solo.meta' }
 };
+var ICON = { impostor: '🕵️', spy: '🔍', wolf: '🐺', wouldrather: '🤔', bomb: '💣', never: '🙈', truth: '🎯', whoami: '🎭', boxes: '🔲', duel: '⚔️', quad: '🎮', hangman: '🔤', solo: '🧩', chess: '♟️', chain: '🎨' };
 var SPECIALS = ['seer', 'witch', 'hunter', 'cupid', 'guardian', 'girl', 'idiot', 'elder'];
 var ROLE_CLS = {
   werewolf: 'r-coral', seer: 'r-lilac', witch: 'r-pink', hunter: 'r-lemon', cupid: 'r-pink',
@@ -32,7 +36,7 @@ var me = null;       // signed-in user or null
 var soundOn = true, audio = null, timers = [];
 var S = {
   screen: 'home', players: loadPlayers(), g: {}, pass: null, b: null, q: null, msg: null, after: null,
-  on: {}, cfg: { sketch: { rounds: 2 }, boxes: { n: 5 }, imp: { cat: 'all', n: 1, tip: true }, spy: { min: 8 }, wolf: { on: { seer: true }, wolves: 0, narrator: false } }
+  on: {}, cfg: { sketch: { rounds: 2 }, boxes: { n: 5 }, imp: { cat: 'all', n: 1, tip: true }, hm: { cat: 'all' }, diff: 'medium', duelBot: false, quadBots: 0, spy: { min: 8 }, wolf: { on: { seer: true }, wolves: 0, narrator: false } }
 };
 
 /* ---------- helpers ---------- */
@@ -90,14 +94,31 @@ var KEY_VOICE = 'boombox.voice';
 var voiceOn = true;
 try { voiceOn = localStorage.getItem(KEY_VOICE) !== '0'; } catch (e) { /* ignore */ }
 var SPEECH = { en: 'en-US', de: 'de-DE', nl: 'nl-NL', fr: 'fr-FR', es: 'es-ES' };
+var KEY_VSET = 'boombox.voiceset';
+var VSET = { name: '', style: 'normal', fun: true };
+try { var vs0 = JSON.parse(localStorage.getItem(KEY_VSET) || 'null'); if (vs0) { VSET.name = vs0.name || ''; VSET.style = vs0.style || 'normal'; VSET.fun = vs0.fun !== false; } } catch (e) { /* ignore */ }
+function saveVset() { try { localStorage.setItem(KEY_VSET, JSON.stringify(VSET)); } catch (e) { /* ignore */ } }
+var STYLES = { normal: [1, 0.92], deep: [0.55, 0.85], high: [1.8, 1.05], slow: [0.8, 0.7], fast: [1.3, 1.35] };
+function voicesFor() {
+  var out = [];
+  try { (window.speechSynthesis.getVoices() || []).forEach(function (v) { if (v.lang && v.lang.slice(0, 2).toLowerCase() === lang && out.length < 12) out.push(v); }); } catch (e) { /* ignore */ }
+  return out;
+}
+function joke(kind) {
+  if (!VSET.fun) return '';
+  var o = [1, 2].filter(function (i) { return L['fun.' + kind + '.' + i] !== undefined || EN['fun.' + kind + '.' + i] !== undefined; });
+  return o.length ? ' ' + t('fun.' + kind + '.' + o[Math.floor(rnd() * o.length)]) : '';
+}
 function canSpeak() { return !!(window.speechSynthesis && window.SpeechSynthesisUtterance); }
 function speak(text, force) {
   if (!canSpeak() || (!voiceOn && !force) || !text) return;
   if (!force && S.screen === 'wolfPlay' && S.g && S.g.narr) return; /* a human narrator reads it out */
   try {
     var ss = window.speechSynthesis, u = new SpeechSynthesisUtterance(text), code = SPEECH[lang] || lang;
-    u.lang = code; u.rate = 0.92;
+    var stl = STYLES[VSET.style] || STYLES.normal;
+    u.lang = code; u.rate = stl[1]; u.pitch = stl[0];
     var vs = ss.getVoices ? ss.getVoices() : [], v = null, i;
+    for (i = 0; i < vs.length && !v; i++) if (VSET.name && vs[i].name === VSET.name && vs[i].lang.slice(0, 2).toLowerCase() === lang) v = vs[i];
     for (i = 0; i < vs.length && !v; i++) if (vs[i].lang && vs[i].lang.replace('_', '-').toLowerCase() === code.toLowerCase()) v = vs[i];
     for (i = 0; i < vs.length && !v; i++) if (vs[i].lang && vs[i].lang.slice(0, 2).toLowerCase() === lang) v = vs[i];
     if (v) u.voice = v;
@@ -106,7 +127,12 @@ function speak(text, force) {
 }
 function stopSpeak() { try { if (canSpeak()) window.speechSynthesis.cancel(); } catch (e) { /* ignore */ } }
 function voiceBtn() {
-  return canSpeak() ? '<button class="chip' + (voiceOn ? ' on' : '') + '" data-act="voice" aria-pressed="' + (voiceOn ? 'true' : 'false') + '">' + (voiceOn ? '🔊 ' : '🔇 ') + T('voice.label') + '</button>' : '';
+  if (!canSpeak()) return '';
+  var vl = voicesFor(), cur = vl.filter(function (v) { return v.name === VSET.name; })[0];
+  return '<button class="chip' + (voiceOn ? ' on' : '') + '" data-act="voice" aria-pressed="' + (voiceOn ? 'true' : 'false') + '">' + (voiceOn ? '🔊 ' : '🔇 ') + T('voice.label') + '</button>' +
+    (vl.length > 1 ? '<button class="chip" data-act="voicepick">' + T('voice.pick') + ': ' + esc(cur ? cur.name.replace(/^(Microsoft|Google)\s+/, '').slice(0, 14) : T('voice.auto')) + '</button>' : '') +
+    '<button class="chip" data-act="voicestyle">' + T('voice.style') + ': ' + T('voice.st.' + VSET.style) + '</button>' +
+    '<button class="chip' + (VSET.fun ? ' on' : '') + '" data-act="voicefun" aria-pressed="' + (VSET.fun ? 'true' : 'false') + '">😄 ' + T('voice.fun') + '</button>';
 }
 function buzz(p) { try { if (navigator.vibrate) navigator.vibrate(p); } catch (e) { /* ignore */ } }
 function go(screen, extra, keepMsg) {
@@ -170,6 +196,12 @@ function top(title, backTo) {
   return '<div class="top"><button class="back" data-act="go" data-a="' + (backTo || 'home') + '">' + T('back') + '</button><div class="t">' + esc(title) + '</div></div>';
 }
 function msgBox() { return S.msg ? '<div class="' + (S.msg.type === 'err' ? 'err' : 'ok') + '" role="alert">' + esc(S.msg.text) + '</div>' : ''; }
+function diffChips() {
+  return '<div class="panel"><div class="label">' + T('diff.label') + '</div><div class="chips">' + ['easy', 'medium', 'hard'].map(function (d) {
+    return '<button class="chip' + (S.cfg.diff === d ? ' on' : '') + '" data-act="setdiff" data-a="' + d + '">' + T('diff.' + d) + '</button>';
+  }).join('') + '</div></div>';
+}
+A.setdiff = function (d) { S.cfg.diff = d; render(); };
 function stepper(label, val, key, hint) {
   return '<div class="panel"><div class="label">' + esc(label) + '</div><div class="step">' +
     '<button data-act="step" data-a="' + key + '" data-b="-1" aria-label="−">−</button><div class="v">' + val + '</div>' +
@@ -200,12 +232,12 @@ V.home = function () {
   var acc = server ? '<button class="' + (me ? 'me' : '') + '" data-act="go" data-a="' + (me && me.mustChange ? 'changepw' : 'account') + '">' + (me ? esc(me.name) : T('signIn')) + '</button>' : '';
   var cards = Object.keys(GAMES).map(function (id) {
     var g = GAMES[id];
-    return '<button class="card ' + g.cls + '" data-act="game" data-a="' + id + '"><h3>' + T('g.' + id) + '</h3><p>' + T('g.' + id + '.d') + '</p><span class="meta">' + (g.min === g.max ? T('duel.meta') : T('range', { min: g.min, max: g.max })) + '</span></button>';
+    return '<button class="card ' + g.cls + '" data-act="game" data-a="' + id + '"><span class="ico" aria-hidden="true">' + (ICON[id] || '') + '</span><h3>' + T('g.' + id) + '</h3><p>' + T('g.' + id + '.d') + '</p><span class="meta">' + (g.meta ? T(g.meta) : T('range', { min: g.min, max: g.max })) + '</span></button>';
   }).join('');
   return '<header><h1 class="wordmark">Boombox</h1><p class="kicker">' + T('appSub') + '</p><p class="sub">' + T('tagline') + '</p></header>' +
     '<div class="tools"><select id="lang" aria-label="' + T('language') + '">' + langs + '</select>' + acc + '</div>' +
     '<button class="bar" data-act="go" data-a="players"><b>' + S.players.length + '</b><span><span class="l">' + T('players') + '</span><span class="n">' + S.players.map(esc).join(', ') + '</span></span><span class="go">' + T('change') + '</span></button>' +
-    (server && server.online ? '<button class="card c-online" data-act="go" data-a="online"><h3>' + T('onlineTitle') + '</h3><p>' + T('onlineDesc') + '</p><span class="meta">' + T('onlineTag') + '</span></button>' : '') +
+    (server && server.online ? '<button class="card c-online" data-act="go" data-a="online"><span class="ico" aria-hidden="true">🌐</span><h3>' + T('onlineTitle') + '</h3><p>' + T('onlineDesc') + '</p><span class="meta">' + T('onlineTag') + '</span></button>' : '') +
     '<div class="grid">' + cards + '</div>' +
     '<div class="foot"><p>' + T('footer1') + '</p><p>' + T('footer2') + '</p></div>';
 };
@@ -246,8 +278,22 @@ V.pass = function () {
       '<p class="kicker">' + T('pass.of', { i: P.i + 1, n: P.items.length }) + '</p></div>';
   }
   var last = P.i === P.items.length - 1;
-  return pr + '<div class="stage">' + it.html + '<button class="btn alt" data-act="pnext">' + (last ? T('pass.last') : T('pass.cover')) + '</button></div>';
+  S.after = swipeDown;
+  return pr + '<div class="stage"><div class="swipe open"><div class="under">' + it.html + '</div><div class="cover" id="swc"><p class="kicker">' + esc(it.name) + '</p><div class="up dn">' + T('pass.down') + '<br>&#9660;</div></div></div><button class="btn alt" data-act="pnext">' + (last ? T('pass.last') : T('pass.cover')) + '</button></div>';
 };
+function swipeDown() {
+  var el = document.getElementById('swc'); if (!el) return;
+  var H = el.offsetHeight, rest = -(H - 56), y0 = null, dy = 0;
+  el.style.transform = 'translateY(' + rest + 'px)';
+  el.addEventListener('pointerdown', function (e) { y0 = e.clientY; dy = 0; el.style.transition = 'none'; try { el.setPointerCapture(e.pointerId); } catch (x) { /* ignore */ } });
+  el.addEventListener('pointermove', function (e) { if (y0 === null) return; dy = Math.max(0, e.clientY - y0); el.style.transform = 'translateY(' + Math.min(0, rest + dy) + 'px)'; });
+  function end() {
+    if (y0 === null) return; y0 = null;
+    if (dy > Math.min(140, H * 0.35)) { el.style.transition = 'transform .18s'; el.style.transform = 'translateY(0)'; setTimeout(function () { A.pnext(); }, 170); }
+    else { el.style.transition = 'transform .2s'; el.style.transform = 'translateY(' + rest + 'px)'; }
+  }
+  el.addEventListener('pointerup', end); el.addEventListener('pointercancel', end);
+}
 function startPass(items, done) { S.pass = { items: items, i: 0, shown: false, done: done }; go('pass'); }
 
 /* Impostor */
@@ -343,12 +389,12 @@ function wolfDeaths(W) {
 /* the text the moderator voice reads for the current screen */
 function wolfSpeech(W) {
   var X = S.g, p = W.phase;
-  if (p === 'night') return (X.sayNight ? t('nar.night') + ' ' : '') + t(NAR[W.step]);
-  if (p === 'dawn') return t('nar.dawn') + ' ' + (W.announce.length ? t('nar.died', { names: wolfDeaths(W) }) : t('nar.noDeaths'));
+  if (p === 'night') return (X.sayNight ? t('nar.night') + joke('night') + ' ' : '') + t(NAR[W.step]);
+  if (p === 'dawn') return t('nar.dawn') + joke('dawn') + ' ' + (W.announce.length ? t('nar.died', { names: wolfDeaths(W) }) + joke('died') : t('nar.noDeaths') + joke('noDeaths'));
   if (p === 'hunter') return t('nar.hunter');
-  if (p === 'vote') return t('nar.vote');
-  if (p === 'voteResult') return W.last.kind === 'elim' ? t('nar.elim', { name: W.players[W.last.id].name, role: t('role.' + W.players[W.last.id].role) }) : W.last.kind === 'idiot' ? t('nar.idiot', { name: W.players[W.last.id].name }) : t('nar.tie');
-  if (p === 'end') return t(W.winner === 'village' ? 'ww.winVillage' : 'ww.winWolves');
+  if (p === 'vote') return t('nar.vote') + joke('vote');
+  if (p === 'voteResult') return W.last.kind === 'elim' ? t('nar.elim', { name: W.players[W.last.id].name, role: t('role.' + W.players[W.last.id].role) }) + joke('elim') : W.last.kind === 'idiot' ? t('nar.idiot', { name: W.players[W.last.id].name }) : t('nar.tie') + joke('tie');
+  if (p === 'end') return t(W.winner === 'village' ? 'ww.winVillage' : 'ww.winWolves') + joke('win');
   return '';
 }
 V.wolfPlay = function () {
@@ -474,15 +520,32 @@ V.boom = function () {
 
 /* Dots and boxes */
 V.boxesSetup = function () {
-  var n = Math.min(4, S.players.length);
-  return top(t('g.boxes')) + '<div class="panel"><p class="hint">' + T('bx.local', { n: n }) + '</p></div>' + stepper(t('bx.size'), S.cfg.boxes.n, 'boxes', t('bx.limit')) +
+  var c = S.cfg.boxes, humans = Math.min(S.players.length, 4), nb = c.bots || 0;
+  var botChips = '<div class="panel"><div class="label">' + T('bx.bots') + '</div><div class="chips">' + [0, 1, 2, 3].map(function (n) {
+    return '<button class="chip' + (nb === n ? ' on' : '') + '" data-act="bxbots" data-a="' + n + '">' + n + '</button>';
+  }).join('') + '</div></div>';
+  return top(t('g.boxes')) + '<div class="panel"><p class="hint">' + T('bx.local', { n: Math.min(4, Math.max(2, humans + nb)) }) + '</p></div>' + stepper(t('bx.size'), c.n, 'boxes', t('bx.limit')) + botChips + (nb || humans < 2 ? diffChips() : '') +
     '<button class="btn lemon" data-act="bxStart">' + T('bx.start') + '</button>';
 };
+A.bxbots = function (n) { S.cfg.boxes.bots = +n; render(); };
 A.bxStart = function () {
-  var names = S.players.slice(0, 4);
-  S.bx = { s: TPBoxes.create(S.cfg.boxes.n, names.length), names: names };
-  recordGame('boxes'); go('boxes');
+  var c = S.cfg.boxes, nb = Math.min(3, c.bots || 0), hum = S.players.slice(0, Math.max(1, Math.min(S.players.length, 4 - nb)));
+  if (hum.length + nb < 2) nb = 2 - hum.length;
+  var names = hum.slice(), isBot = hum.map(function () { return false; }), i;
+  for (i = 0; i < nb; i++) { names.push(t('bx.botName', { n: i + 1 })); isBot.push(true); }
+  S.bx = { s: TPBoxes.create(c.n, names.length), names: names, bot: isBot, diff: S.cfg.diff, token: Math.random() };
+  recordGame('boxes'); go('boxes'); bxBotTurn();
 };
+function bxBotTurn() {
+  var X = S.bx; if (!X || S.screen !== 'boxes' || X.s.done || !X.bot[X.s.turn]) return;
+  var tok = X.token;
+  later(function () {
+    if (S.bx !== X || X.token !== tok || S.screen !== 'boxes' || X.s.done || !X.bot[X.s.turn]) return;
+    var got = TPBoxes.move(X.s, TPBoxes.bestMove(X.s, X.diff, rnd));
+    if (got > 0) beep(880, 0.08, 0.06);
+    render(); bxBotTurn();
+  }, 650);
+}
 V.boxes = function () {
   var X = S.bx, s = X.s, letters = X.names.map(function (n) { return n.charAt(0).toUpperCase(); });
   var rows = X.names.map(function (n, i) { return '<li><span><i class="dot" style="background:' + TPBoxes.COLORS[i] + '"></i> ' + esc(n) + (i === s.turn && !s.done ? ' ◀' : '') + '</span><span>' + s.scores[i] + '</span></li>'; }).join('');
@@ -491,7 +554,7 @@ V.boxes = function () {
   return top(t('g.boxes')) + '<div class="stage">' + head + TPBoxes.svg(s, 'bxedge', letters) + '<div class="panel"><ul class="list">' + rows + '</ul></div>' +
     (s.done ? '<button class="btn lemon" data-act="bxStart">' + T('on.again') + '</button>' : '') + '</div>';
 };
-A.bxedge = function (key) { var got = TPBoxes.move(S.bx.s, key); if (got < 0) return; buzz(got ? [30, 40, 30] : 12); if (got) beep(880, 0.08, 0.06); render(); };
+A.bxedge = function (key) { if (S.bx.bot[S.bx.s.turn]) return; var got = TPBoxes.move(S.bx.s, key); if (got < 0) return; buzz(got ? [30, 40, 30] : 12); if (got) beep(880, 0.08, 0.06); render(); bxBotTurn(); };
 
 /* Never have I ever */
 V.never = function () {
@@ -632,6 +695,9 @@ A.game = function (id) {
   else if (id === 'wolf') go('wolfSetup');
   else if (id === 'duel') go('duel', {});
   else if (id === 'quad') go('quad', {});
+  else if (id === 'solo') go('solo', {});
+  else if (id === 'chess') { recordGame('chess'); go('chessSetup', {}); }
+  else if (id === 'hangman') { recordGame('hangman'); go('hangmanSetup', {}); }
   else if (id === 'wouldrather') { S.q = { order: shuffle(D('questions')), i: 0, pairs: shuffle(D('rather')), pi: 0 }; recordGame('wouldrather'); go('wouldrather'); }
   else if (id === 'never') { S.q = { order: shuffle(D('never')), i: 0 }; recordGame('never'); go('never'); }
   else if (id === 'truth') { S.tod = { who: Math.floor(rnd() * n), card: null, used: [] }; recordGame('truth'); go('truth'); }
@@ -740,6 +806,12 @@ A.wgo = function () {
   wolfDone();
 };
 A.wnone = function () { var W = S.g.W; if (W.phase === 'hunter') TPWolf.shoot(W, null); else if (W.phase === 'vote') TPWolf.vote(W, null); wolfDone(); };
+A.voicepick = function () {
+  var vl = voicesFor(), i = -1; vl.forEach(function (v, k) { if (v.name === VSET.name) i = k; });
+  i++; VSET.name = i >= vl.length ? '' : vl[i].name; saveVset(); render(); speak(t('voice.pick') + ' ' + (VSET.name || t('voice.auto')), true);
+};
+A.voicestyle = function () { var k = Object.keys(STYLES); VSET.style = k[(k.indexOf(VSET.style) + 1) % k.length]; saveVset(); render(); speak(t('voice.st.' + VSET.style), true); };
+A.voicefun = function () { VSET.fun = !VSET.fun; saveVset(); S.g.speakKey = ''; render(); };
 A.wsay = function () { speak(wolfSpeech(S.g.W), true); };
 A.voice = function () { voiceOn = !voiceOn; try { localStorage.setItem(KEY_VOICE, voiceOn ? '1' : '0'); } catch (e) { /* ignore */ } if (!voiceOn) stopSpeak(); else if (S.screen === 'wolfPlay') S.g.speakKey = ''; render(); };
 A.pwshow = function (id) {
@@ -871,9 +943,12 @@ function init() {
     })
     .then(function () {
       var TPo = { S: S, V: V, A: A, F: F, t: t, T: T, esc: esc, has: function (k) { return L[k] !== undefined || EN[k] !== undefined; }, api: api, toast: toast, go: go, render: render,
-        beep: beep, fmt: fmt, bombSvg: bombSvg, top: top, msgBox: msgBox, setMsg: setMsg, lang: function () { return lang; }, me: function () { return me; }, D: D,
-        stepper: stepper, toggle: toggle, SPECIALS: SPECIALS, wolfCounts: wolfCounts, serverOnline: function () { return true; }, speak: speak, voiceBtn: voiceBtn, canSpeak: canSpeak };
+        beep: beep, buzz: buzz, fmt: fmt, bombSvg: bombSvg, top: top, msgBox: msgBox, setMsg: setMsg, lang: function () { return lang; }, me: function () { return me; }, D: D,
+        stepper: stepper, toggle: toggle, diffChips: diffChips, D: D, SPECIALS: SPECIALS, wolfCounts: wolfCounts, serverOnline: function () { return true; }, speak: speak, voiceBtn: voiceBtn, canSpeak: canSpeak };
       if (window.TPDuel) window.TPDuel(TPo);
+      if (window.TPHangman) window.TPHangman(TPo);
+      if (window.TPSolo) window.TPSolo(TPo);
+      if (window.TPChess) window.TPChess(TPo);
       if (server && server.online && window.TPOnline) {
         window.TPOnline(TPo);
         if (TPo.afterInit) TPo.afterInit();
